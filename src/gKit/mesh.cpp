@@ -25,6 +25,7 @@ Mesh::Mesh( const GLenum primitives, const std::vector<vec3>& positions ) :
 {
     m_primitives= primitives;
     m_positions= positions;
+    m_update_buffers= true;
 }
 
 Mesh::Mesh( const GLenum primitives, const std::vector<vec3>& positions, const std::vector<unsigned>& indices ) : 
@@ -34,6 +35,7 @@ Mesh::Mesh( const GLenum primitives, const std::vector<vec3>& positions, const s
     m_primitives= primitives;
     m_positions= positions;
     m_indices= indices;
+    m_update_buffers= true;
 }
 
 Mesh::Mesh( const GLenum primitives, const std::vector<vec3>& positions, 
@@ -47,6 +49,7 @@ Mesh::Mesh( const GLenum primitives, const std::vector<vec3>& positions,
     m_primitives= primitives;
     m_positions= positions;
     m_indices= indices;
+    m_update_buffers= true;
     
     // n'initialise les autres attributs que s'ils sont definis
     if(texcoords.size() > 0 && texcoords.size() == positions.size()) 
