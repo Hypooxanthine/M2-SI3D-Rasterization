@@ -262,3 +262,13 @@ project("simple_gltf")
 	files ( gkit_files )
 	files { gkit_dir .. "/tutos/gltf/simple.cpp" }
 
+project("TP_SI3D")
+    language "C++"
+    kind "ConsoleApp"
+    targetdir "bin"
+    files ( gkit_files )
+    files { gkit_dir,
+            "TP_SI3D/src/TP_SI3D.cpp",
+            "TP_SI3D/src/Terrain.cpp",
+    }
+    includedirs { gkit_dir .. "/TP_SI3D/include" }

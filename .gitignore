@@ -1,9 +1,12 @@
+bin/
 bin/*.dll
 bin/*.exe
 bin/*.pdb
 build
+obj/
 *.make
 *.cbp
+*.png
 
 *.workspace
 
