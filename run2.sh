@@ -1,0 +1,1 @@
+./build2.sh && ./bin/TP2_SI3D

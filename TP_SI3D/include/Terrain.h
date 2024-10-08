@@ -3,23 +3,27 @@
 #include <mesh.h>
 #include <image.h>
 #include <program.h>
+#include <texture.h>
 
 #include <vector>
+
+#include "CubeBash.h"
 
 class Terrain
 {
 public:
     struct TerrainSpecs
     {
-        int cubesWidth = 100;
-        int cubesHeight = 100;
-        float cubeSize = 1.f;
+        int cubesWidth = 200;
+        int cubesHeight = 10;
+        float cubeSize = .01f;
     };
 public:
     Terrain(const TerrainSpecs& specs);
     Terrain();
+    ~Terrain();
 
-    void draw(const Transform& view, const Transform& projection);
+    void draw(const Transform& view, const Transform& projection) const;
 
 private:
     void loadData();
@@ -28,10 +32,12 @@ private:
 private:
     TerrainSpecs m_Specs;
     
-    Mesh m_CubeMesh;
     Image m_HeightMap;
 
+    GLuint m_SpriteSheetTextureID;
+
+    CubeBash m_GrassBash;
+
     GLuint m_CubeShaderID;
-    GLuint m_InstanceData;
-    std::vector<Transform> m_CubeTransforms;
+    GLuint m_InstancesData;
 };

@@ -22,9 +22,9 @@ solution "gKit2light"
 --~ 		defines { "GK_RELEASE" }
         if _PREMAKE_VERSION >="5.0" then
             optimize "full"
-            cppdialect "c++11"
+            cppdialect "c++17"
         else
-            buildoptions { "-std=c++11" }
+            buildoptions { "-std=c++17" }
             flags { "OptimizeSpeed" }
         end
         
@@ -270,5 +270,17 @@ project("TP_SI3D")
     files { gkit_dir,
             "TP_SI3D/src/TP_SI3D.cpp",
             "TP_SI3D/src/Terrain.cpp",
+            "TP_SI3D/src/Cube.cpp",
+            "TP_SI3D/src/CubeBash.cpp",
     }
     includedirs { gkit_dir .. "/TP_SI3D/include" }
+
+project("TP2_SI3D")
+    language "C++"
+    kind "ConsoleApp"
+    targetdir "bin"
+    files ( gkit_files )
+    files { gkit_dir,
+            "TP2_SI3D/src/TP2_SI3D.cpp",
+    }
+    includedirs { gkit_dir .. "/TP2_SI3D/include" }

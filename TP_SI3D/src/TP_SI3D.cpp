@@ -12,21 +12,11 @@ class TP : public AppCamera
 {
 public:
     // constructeur : donner les dimensions de l'image, et eventuellement la version d'openGL.
-    TP( ) : AppCamera(1024, 640) {}
+    TP( ) : AppCamera(1024, 640), m_Terrain() {}
     
     // creation des objets de l'application
-    int init( )
-    {        
-        // charge un objet
-        m_cube= read_mesh("data/cube.obj");
-        
-        // un autre objet
-        m_objet= Mesh(GL_TRIANGLES);
-        {
-            // ajouter des triplets de sommet == des triangles dans objet...
-        }
-        
-        // etat openGL par defaut
+    int init( ) override
+    {
         glClearColor(0.2f, 0.2f, 0.2f, 1.f);        // couleur par defaut de la fenetre
         
         glClearDepth(1.f);                          // profondeur par defaut
@@ -37,31 +27,22 @@ public:
     }
     
     // destruction des objets de l'application
-    int quit( )
+    int quit( ) override
     {
-        m_objet.release();
-        return 0;   // pas d'erreur
+        return 0;
     }
     
     // dessiner une nouvelle image
-    int render( )
+    int render( ) override
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
         m_Terrain.draw(camera().view(), camera().projection());
         
-    // comment dessiner m_objet ?? 
-    
-    // et sans le superposer au cube deja dessine ?
-        
-        // continuer, afficher une nouvelle image
-        // tant que la fenetre est ouverte...
         return 1;
     }
 
 protected:
-    Mesh m_objet;
-    Mesh m_cube;
     Terrain m_Terrain;
 };
 
