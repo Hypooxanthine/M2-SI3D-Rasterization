@@ -84,6 +84,7 @@ struct Triangle
 };
 
 std::vector<Triangle> triangles;
+Mesh mesh;
 
 // renvoie la normale au point d'intersection
 Vector normal( const Mesh& mesh, const Hit& hit )
@@ -123,10 +124,28 @@ const Color L_sun = Color{ 1.f, 1.f, 1.f };
 
 float V_Sun(const Point& p, const Vector& l)
 {
-
-
     const Vector Y = Vector{ 0.f, 1.f, 0.f };
-    return dot(l, Y) > 0 ? 1.f : 0.f;
+    if (dot(l, Y) < 0) return 0.f;
+
+    Hit hit = intersect(p, p + l);
+    
+    return !hit;
+}
+
+Color Li(const Point& p, const Vector& l)
+{
+    if (Hit hit = intersect(p, p + l)) // Intersection avec un triangle ?
+    {
+        const Material& mat = mesh.triangle_material(hit.triangle_id);
+        return mat.emission; // On renvoie son emission : s'il n'est pas emissif, on renverra du noir
+    }
+    
+    // Sinon : ciel ?
+    const Vector Y = Vector{ 0.f, 1.f, 0.f };
+    if (dot(l, Y) > 0) // Si le rayon l pointe vers le ciel
+        return L_sun;
+
+    return Black();
 }
 
 constexpr float pdf(const Vector& l)
@@ -135,12 +154,49 @@ constexpr float pdf(const Vector& l)
 }
 
 template <typename RNG>
-Color Lr(const Point& p, const Vector& o, const Vector& n, RNG& rng, unsigned int samples)
+Color Lr(const Point& p, const Vector& o, const Vector& n, RNG& rng, unsigned int samples, int triangleID)
 {
     std::uniform_real_distribution<float> uniform(0.f, 1.f);
 
-    Color out = Color{ 0.f, 0.f, 0.f };
+    Color emissiveTrianglesContrib = Color(0.f, 0.f, 0.f);
 
+    for (size_t i = 0; i < triangles.size(); i++)
+    {
+        const auto& emission = mesh.triangle_material(i).emission;
+        if (emission.max() < 0.00001f)
+            continue;
+
+        const Triangle& t = triangles.at(i);
+
+        for (unsigned int s = 0; s < samples; s++)
+        {
+            const float u1 = uniform(rng);
+            const float u2 = uniform(rng);
+            
+            const float alpha = 1.f - std::sqrt(u1);
+            const float beta = (1.f - u2) * std::sqrt(u1);
+            const float gamma = u2 * std::sqrt(u1);
+
+            const Point q = alpha * t.p + beta * (t.p + t.e1) + gamma * (t.p + t.e2);
+
+            if (Hit h = intersect(p, q)) // Il faut intersecter le triangle emissif
+                if (static_cast<size_t>(h.triangle_id) != i) // Mais un autre triangle peut se trouver au milieu
+                    continue;
+                
+            // Le triangle emissif est bien visible ici
+
+            float pdf = 1.f / (length(cross(t.e1, t.e2)) / 2.f);
+            float cos_theta = std::max(0.f, dot(n, normalize(q - p)));
+
+            emissiveTrianglesContrib = emissiveTrianglesContrib + emission * cos_theta / pdf / static_cast<float>(samples) / M_PIf;
+        }
+    }
+
+    Color fragColor = mesh.triangle_material(triangleID).diffuse * emissiveTrianglesContrib; 
+    fragColor.a = 1.f;
+    return fragColor;
+
+    /*
     for (unsigned int i = 0; i < samples; i++)
     {
         const float u1 = uniform(rng);
@@ -151,16 +207,17 @@ Color Lr(const Point& p, const Vector& o, const Vector& n, RNG& rng, unsigned in
             const float cos_theta = u1;
             const float sin_theta = std::sqrt(1.f - cos_theta * cos_theta);
             const float phi = 2.f * M_PIf * u2;
-            l = Vector{ std::cos(phi) * sin_theta, cos_theta, sin_theta * std::sin(phi) };
+            l = normalize(Vector{ std::cos(phi) * sin_theta, sin_theta * std::sin(phi), cos_theta });
         }
 
-        float cos_theta= std::max(float(0), dot(n, l));
-        out = out + L_sun * V_Sun(p, l) * cos_theta / pdf(l);
+        float cos_theta = std::max(0.f, dot(n, l));
+        out = out + Li(p, l) * cos_theta / pdf(l);
     }
 
-    out = out / static_cast<float>(samples) / M_PIf;
-    out.a = 1.f;
-    return out;
+    Color col = mesh.triangle_material(triangleID).diffuse * L_sun * out / static_cast<float>(samples) / M_PIf;
+    col.a = 1.f;
+    return col;
+    */
 }
 
 int main( const int argc, const char **argv )
@@ -177,7 +234,7 @@ int main( const int argc, const char **argv )
     if(camera.read_orbiter(orbiter_filename) < 0)
         return 1;
 
-    Mesh mesh= read_mesh(mesh_filename);
+    mesh= read_mesh(mesh_filename);
 
     std::random_device hwseed;
     std::default_random_engine rng(hwseed());
@@ -194,7 +251,7 @@ int main( const int argc, const char **argv )
     // recupere les transformations pour generer les rayons
     camera.projection(image.width(), image.height(), 45);
     Transform model= Identity();
-    Transform view= camera.view();
+    Transform view= Inverse(Translation(0.f, 0.f, 1.f)) *  camera.view();
     Transform projection= camera.projection();
     Transform viewport= camera.viewport();
     Transform inv= Inverse(viewport * projection * view * model);
@@ -231,10 +288,10 @@ auto start= std::chrono::high_resolution_clock::now();
     #if 1
         if(hit)
         {
-            Vector n= normal(mesh, hit);
+            Vector n = normal(mesh, hit);
             // Couleur par l'estimateur de Monte-Carlo
             const Point p = ray.o + hit.t * ray.d;
-            image(x, y) = Lr(p + 0.0001f * n, -normalize(ray.d), n, rng, 32);
+            image(x, y) = Lr(p + 0.0001f * n, -normalize(ray.d), n, rng, 16, hit.triangle_id);
         }
     #endif
     }
