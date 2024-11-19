@@ -10,7 +10,7 @@
 class Texture2D
 {
 public:
-    inline Texture2D()
+    inline constexpr Texture2D()
     {}
 
     Texture2D(const Texture2D& other) = delete;
@@ -25,6 +25,8 @@ public:
         other.m_RenderID = 0;
         other.m_Width = 0;
         other.m_Height = 0;
+
+        return *this;
     }
 
     inline Texture2D(Texture2D&& other)
@@ -73,7 +75,11 @@ public:
         }
     }
 
-    inline GLuint getRenderId() const { return m_RenderID; }
+    inline constexpr GLuint getRenderId() const { return m_RenderID; }
+
+    inline constexpr size_t getWidth() const { return m_Width; }
+
+    inline constexpr size_t getHeight() const { return m_Height; }
 
 private:
     GLuint m_RenderID = 0;

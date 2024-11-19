@@ -45,6 +45,8 @@ public:
 
         other.m_RenderID = 0;
         other.m_ColorAttachmentsCount = 0;
+
+        return *this;
     }
 
     inline constexpr FrameBuffer(FrameBuffer&& other)
@@ -52,7 +54,7 @@ public:
         *this = std::move(other);
     }
 
-    inline constexpr void generate(bool onScreen = false)
+    inline void generate(bool onScreen = false)
     {
         release();
 
@@ -79,7 +81,7 @@ public:
      * @brief L'ordre des bindings est le même que l'ordre des appels. Les color attachments
      * sont faits incrémentalement en partant de attachment0.
      */
-    inline constexpr void attachTexture(const Texture2D& texture, TextureAttachment textureAttachment, GLint mipmapLevel)
+    inline void attachTexture(const Texture2D& texture, TextureAttachment textureAttachment, GLint mipmapLevel)
     {
         bind();
 
@@ -89,21 +91,33 @@ public:
         else
         {
             ASSERT(m_ColorAttachmentsCount < 8, "Cannot use more than 8 color attachments");
-            attachment += m_ColorAttachmentsCount;
+            attachment = s_ColorAttachmentsInOrder[m_ColorAttachmentsCount];
             ++m_ColorAttachmentsCount;
+
+            std::cout << "Attaching texture to color " << attachment << "\n";
         }
 
         glFramebufferTexture(GL_DRAW_FRAMEBUFFER, attachment, texture.getRenderId(), mipmapLevel);
     }
 
-    inline constexpr void setupBindings() const
+    inline void setupBindings() const
     {
+        bind();
         glDrawBuffers(m_ColorAttachmentsCount, s_ColorAttachmentsInOrder.data());
+
+        for (const auto& c : s_ColorAttachmentsInOrder)
+            std::cout << c << "\n";
+
         ASSERT(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE,
             "Framebuffer incomplete");
     }
 
-    inline GLuint getRenderId() const { return m_RenderID; }
+    inline void blitFrom(const FrameBuffer& other) const
+    {
+
+    }
+
+    inline constexpr GLuint getRenderId() const { return m_RenderID; }
 
 private:
     GLuint m_RenderID = 0;
