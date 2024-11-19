@@ -1,0 +1,1 @@
+make TP_CG -j config=release

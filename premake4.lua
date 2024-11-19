@@ -284,3 +284,13 @@ project("TP2_SI3D")
             "TP2_SI3D/src/TP2_SI3D.cpp",
     }
     includedirs { gkit_dir .. "/TP2_SI3D/include" }
+
+project("TP_CG")
+    language "C++"
+    kind "ConsoleApp"
+    targetdir "bin"
+    files ( gkit_files )
+    files { gkit_dir,
+            "TP_CG/src/TP_CG.cpp",
+    }
+    includedirs { gkit_dir .. "/TP_CG/include" }
