@@ -85,7 +85,7 @@ public:
     {
         bind();
 
-        GLenum attachment = GL_COLOR_ATTACHMENT0;
+        GLenum attachment;
         if (textureAttachment == TextureAttachment::Depth)
             attachment = GL_DEPTH_ATTACHMENT;
         else
@@ -108,13 +108,23 @@ public:
         for (const auto& c : s_ColorAttachmentsInOrder)
             std::cout << c << "\n";
 
-        ASSERT(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE,
+        ASSERT(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE,
             "Framebuffer incomplete");
     }
 
     inline void blitFrom(const FrameBuffer& other) const
     {
-
+        // void glBlitFramebuffer(
+        //     GLint srcX0,
+        //     GLint srcY0,
+        //     GLint srcX1,
+        //     GLint srcY1,
+        //     GLint dstX0,
+        //     GLint dstY0,
+        //     GLint dstX1,
+        //     GLint dstY1,
+        //     GLbitfield mask,
+        //     GLenum filter);
     }
 
     inline constexpr GLuint getRenderId() const { return m_RenderID; }
