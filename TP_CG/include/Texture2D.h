@@ -49,14 +49,17 @@ public:
         m_RenderID = make_depth_texture(0, m_Width, m_Height);
     }
 
-    inline void generateForColor(size_t width, size_t height)
+    inline void generateForColor(size_t width, size_t height, bool useAlpha)
     {
         release();
 
         m_Width = width;
         m_Height = height;
 
-        m_RenderID = make_vec3_texture(0, m_Width, m_Height);
+        if (useAlpha)
+            m_RenderID = make_vec4_texture(0, m_Width, m_Height);
+        else
+            m_RenderID = make_vec3_texture(0, m_Width, m_Height);
     }
 
     inline void bind()

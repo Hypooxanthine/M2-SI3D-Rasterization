@@ -73,9 +73,9 @@ public:
 
         // etape 1 : creer le shader program
         m_GShader= read_program(s_GShaderPath.data());
-        program_print_errors(m_GShader);
+        m_ShadersCompileOK = m_ShadersCompileOK && !program_print_errors(m_GShader);
         m_ColorsComputeShader = read_program(s_ColorsComputeShaderPath.data());
-        program_print_errors(m_ColorsComputeShader);
+        m_ShadersCompileOK = m_ShadersCompileOK && !program_print_errors(m_ColorsComputeShader);
         
         // etat openGL par defaut
         glClearColor(0.2f, 0.2f, 0.2f, 1.f);        // couleur par defaut de la fenetre
@@ -85,9 +85,13 @@ public:
         glEnable(GL_DEPTH_TEST);                    // activer le ztest
 
         // Initialisation des textures
-        zbufferTexture.generateForDepth(s_TexturesWidth, s_TexutresHeight);
-        positionTexture.generateForColor(s_TexturesWidth, s_TexutresHeight);
-        normalTexture.generateForColor(s_TexturesWidth, s_TexutresHeight);
+        zbufferTexture.generateForDepth(s_TexturesWidth, s_TexturesHeight);
+        position_MatId_Texture.generateForColor(s_TexturesWidth, s_TexturesHeight, true);
+        normal_Shininess_Texture.generateForColor(s_TexturesWidth, s_TexturesHeight, true);
+        albedoTexture.generateForColor(s_TexturesWidth, s_TexturesHeight, false);
+        metallicTexture.generateForColor(s_TexturesWidth, s_TexturesHeight, false);
+        roughnessTexture.generateForColor(s_TexturesWidth, s_TexturesHeight, false);
+        specularTexture.generateForColor(s_TexturesWidth, s_TexturesHeight, false);
 
         // Initialisation du framebuffer de la fenêtre.
         // onScreen = true va faire que le framebuffer aura un renderID de 0.
@@ -98,8 +102,12 @@ public:
         // Initialisation du frambuffer pour le deffered rendering
         gFrameBuffer.generate();
         gFrameBuffer.attachTexture(zbufferTexture, FrameBuffer::TextureAttachment::Depth, 0);
-        gFrameBuffer.attachTexture(positionTexture, FrameBuffer::TextureAttachment::Color, 0);
-        gFrameBuffer.attachTexture(normalTexture, FrameBuffer::TextureAttachment::Color, 0);
+        gFrameBuffer.attachTexture(position_MatId_Texture, FrameBuffer::TextureAttachment::Color, 0);
+        gFrameBuffer.attachTexture(normal_Shininess_Texture, FrameBuffer::TextureAttachment::Color, 0);
+        gFrameBuffer.attachTexture(albedoTexture, FrameBuffer::TextureAttachment::Color, 0);
+        gFrameBuffer.attachTexture(metallicTexture, FrameBuffer::TextureAttachment::Color, 0);
+        gFrameBuffer.attachTexture(roughnessTexture, FrameBuffer::TextureAttachment::Color, 0);
+        gFrameBuffer.attachTexture(specularTexture, FrameBuffer::TextureAttachment::Color, 0);
         gFrameBuffer.setupBindings();
 
         return 0;   // ras, pas d'erreur
@@ -148,11 +156,15 @@ public:
         if(key_state('r'))
         {
             clear_key_state('r');        // une seule fois...
+            m_ShadersCompileOK = true;
             reload_program(m_GShader, s_GShaderPath.data());
-            program_print_errors(m_GShader);
+            m_ShadersCompileOK = m_ShadersCompileOK && !program_print_errors(m_GShader);
             reload_program(m_ColorsComputeShader, s_ColorsComputeShaderPath.data());
-            program_print_errors(m_ColorsComputeShader);
+            m_ShadersCompileOK = m_ShadersCompileOK && !program_print_errors(m_ColorsComputeShader);
         }
+
+        if (!m_ShadersCompileOK)
+            return 1;
         
         // etape 2 : dessiner m_objet avec le shader program
         // configurer le pipeline 
@@ -185,8 +197,8 @@ public:
         draw(m_grid, Identity(), m_camera);
 
         /* Deuxième passe : on copie depuis le gbuffer vers le framebuffer de la fenêtre */
-
-        
+        windowFrameBuffer.blitFrom(gFrameBuffer, window_width(), window_height());
+        windowFrameBuffer.bind();
         
         return 1;
     }
@@ -196,11 +208,12 @@ protected:
     Mesh m_grid;
     Orbiter m_camera;
     GLuint m_GShader, m_ColorsComputeShader;
+    bool m_ShadersCompileOK = true;
 
-    Texture2D zbufferTexture, positionTexture, normalTexture;
+    Texture2D zbufferTexture, position_MatId_Texture, normal_Shininess_Texture, albedoTexture, metallicTexture, roughnessTexture, specularTexture;
     FrameBuffer windowFrameBuffer, gFrameBuffer;
 
-    static constexpr size_t s_TexturesWidth = 1024, s_TexutresHeight = 1024;
+    static constexpr size_t s_TexturesWidth = 4096, s_TexturesHeight = 4096;
     static constexpr std::string_view s_GShaderPath = "TP_CG/shaders/gshader.glsl";
     static constexpr std::string_view s_ColorsComputeShaderPath = "TP_CG/shaders/compute_colors.glsl";
 };

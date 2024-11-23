@@ -93,8 +93,6 @@ public:
             ASSERT(m_ColorAttachmentsCount < 8, "Cannot use more than 8 color attachments");
             attachment = s_ColorAttachmentsInOrder[m_ColorAttachmentsCount];
             ++m_ColorAttachmentsCount;
-
-            std::cout << "Attaching texture to color " << attachment << "\n";
         }
 
         glFramebufferTexture(GL_DRAW_FRAMEBUFFER, attachment, texture.getRenderId(), mipmapLevel);
@@ -105,26 +103,19 @@ public:
         bind();
         glDrawBuffers(m_ColorAttachmentsCount, s_ColorAttachmentsInOrder.data());
 
-        for (const auto& c : s_ColorAttachmentsInOrder)
-            std::cout << c << "\n";
-
         ASSERT(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE,
             "Framebuffer incomplete");
     }
 
-    inline void blitFrom(const FrameBuffer& other) const
+    inline void blitFrom(const FrameBuffer& other, GLint width, GLint height) const
     {
-        // void glBlitFramebuffer(
-        //     GLint srcX0,
-        //     GLint srcY0,
-        //     GLint srcX1,
-        //     GLint srcY1,
-        //     GLint dstX0,
-        //     GLint dstY0,
-        //     GLint dstX1,
-        //     GLint dstY1,
-        //     GLbitfield mask,
-        //     GLenum filter);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, other.getRenderId());
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_RenderID);
+
+        glBlitFramebuffer(
+            0, 0, width, height,
+            0, 0, width, height,
+            GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
     }
 
     inline constexpr GLuint getRenderId() const { return m_RenderID; }
