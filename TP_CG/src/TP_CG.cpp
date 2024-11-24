@@ -23,7 +23,7 @@
 struct PointLight
 {
     Point position;
-    Color color;
+    Point color;
     float intensity;
     float radius;
 };
@@ -39,7 +39,7 @@ Mesh make_grid( const int n= 10 )
     for(int x= 0; x < n; x++)
     {
         float px= float(x) - float(n)/2 + .5f;
-        grid.vertex(Point(px, 0, - float(n)/2 + .5f)); 
+        grid.vertex(Point(px, 0, - float(n)/2 + .5f));
         grid.vertex(Point(px, 0, float(n)/2 - .5f));
     }
 
@@ -75,10 +75,6 @@ public:
     {
         m_grid= make_grid();
         m_objet= read_mesh("data/cube.obj");
-        
-        Point pmin, pmax;
-        m_grid.bounds(pmin, pmax);
-        m_camera.lookat(pmin, pmax);
 
         // etape 1 : creer le shader program
         m_GShader.generate();
@@ -91,19 +87,13 @@ public:
         if (m_ShadersCompileOK)
             std::cout << "Shaders compiled successfully" << std::endl;
 
-
-        
-        glClearDepth(1.f);                          // profondeur par defaut
-        glDepthFunc(GL_LESS);                       // ztest, conserver l'intersection la plus proche de la camera
-        glEnable(GL_DEPTH_TEST);                    // activer le ztest
-
         // Initialisation des textures
         zbufferTexture.generateForDepth(s_TexturesWidth, s_TexturesHeight);
         position_matid_Texture.generateForColor(s_TexturesWidth, s_TexturesHeight, true);
         normal_Shininess_Texture.generateForColor(s_TexturesWidth, s_TexturesHeight, true);
-        ambientTexture.generateForColor(s_TexturesWidth, s_TexturesHeight, false);
-        diffuseTexture.generateForColor(s_TexturesWidth, s_TexturesHeight, false);
-        specularTexture.generateForColor(s_TexturesWidth, s_TexturesHeight, false);
+        ambientTexture.generateForColor(s_TexturesWidth, s_TexturesHeight, true);
+        diffuseTexture.generateForColor(s_TexturesWidth, s_TexturesHeight, true);
+        specularTexture.generateForColor(s_TexturesWidth, s_TexturesHeight, true);
         colorTexture.generateForColor(s_TexturesWidth, s_TexturesHeight, true);
 
         // Initialisation du framebuffer de la fenêtre.
@@ -114,12 +104,12 @@ public:
 
         // Initialisation du frambuffer pour le deffered rendering (GBuffer)
         gFrameBuffer.generate();
-        gFrameBuffer.attachTexture(zbufferTexture, FrameBuffer::TextureAttachment::Depth, 0);
         gFrameBuffer.attachTexture(position_matid_Texture, FrameBuffer::TextureAttachment::Color, 0);
         gFrameBuffer.attachTexture(normal_Shininess_Texture, FrameBuffer::TextureAttachment::Color, 0);
         gFrameBuffer.attachTexture(ambientTexture, FrameBuffer::TextureAttachment::Color, 0);
         gFrameBuffer.attachTexture(diffuseTexture, FrameBuffer::TextureAttachment::Color, 0);
         gFrameBuffer.attachTexture(specularTexture, FrameBuffer::TextureAttachment::Color, 0);
+        gFrameBuffer.attachTexture(zbufferTexture, FrameBuffer::TextureAttachment::Depth, 0);
         gFrameBuffer.setupBindings();
 
         // Initialisation du frambuffer intermédiaire qui contient la sortie du compute shader
@@ -130,8 +120,8 @@ public:
         // Initialisation du shader storage buffer object pour les lumières
         lights.first = 2;
         lights.second = {
-            PointLight{Point(5, 5, 0), Color(1, 0, 0), 10.f, 100.f},
-            PointLight{Point(0, 5, 5), Color(0, 0, 1), 10.f, 100.f}
+            PointLight{{5, 5, 0}, {1, 0, 0}, 10.f, 100.f},
+            PointLight{{0, 5, 5}, {0, 0, 1}, 10.f, 100.f}
         };
         lightsSSBO.generate();
         lightsSSBO.setBindingPoint(0);
@@ -190,35 +180,30 @@ public:
         // etape 2 : dessiner m_objet avec le shader program
         // configurer le pipeline 
         gFrameBuffer.bind();
+        glDepthFunc(GL_LESS);
+        glEnable(GL_DEPTH_TEST);
         glViewport(0, 0, window_width(), window_height());
-        glClearColor(0.f, 0.f, 0.f, 1.f);
+        glClearColor(0.f, 0.f, 0.f, 0.f);
+        glClearDepth(1.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
         m_GShader.bind();
 
-        // configurer le shader program
-        // . recuperer les transformations
-        Transform model= RotationX(global_time() / 20);
+        // Transformations MVP
+        Transform model = RotationX(global_time() / 20);
         Transform normalMatrix = model.normal();
-        Transform view= m_camera.view();
-        Transform projection= m_camera.projection(window_width(), window_height(), 45);
+        Transform view = m_camera.view();
+        Transform projection = m_camera.projection(window_width(), window_height(), 45);
+        Transform mv = view * model;
+        Transform mvp = projection * mv;
         
-        // . composer les transformations : model, view et projection
-        Transform mv= view * model;
-        Transform mvp= projection * mv;
-        
-        // . parametrer le shader program :
-        //   . transformation : la matrice declaree dans le vertex shader s'appelle mvpMatrix
+        // Uniforms
         m_GShader.setUniform("modelMatrix", model);
         m_GShader.setUniform("mvpMatrix", mvp);
         m_GShader.setUniform("normalMatrix", normalMatrix);
         
-        // . parametres "supplementaires" :
-        
-        // go !
-        // mesh associe les donnees positions, texcoords, normals et colors aux attributs declares dans le vertex shader
+        // Draw calls
         m_objet.draw(m_GShader.getRenderId(), /* use position */ true, /* use texcoord */ false, /* use normal */ true, /* use color */ false, /* use material index*/ false);
-
-        // dessine aussi le repere et la grille pour le meme point de vue
         draw(m_grid, Identity(), m_camera);
 
         /* Deuxième passe : on envoie les textures au compute shader */
@@ -233,11 +218,12 @@ public:
         m_ColorsComputeShader.bind();
 
         // On envoie les données du gbuffer au compute shader
-        m_ColorsComputeShader.setTextureUniform(position_matid_Texture, 0);
-        m_ColorsComputeShader.setTextureUniform(normal_Shininess_Texture, 1);
-        m_ColorsComputeShader.setTextureUniform(ambientTexture, 2);
-        m_ColorsComputeShader.setTextureUniform(diffuseTexture, 3);
-        m_ColorsComputeShader.setTextureUniform(specularTexture, 4);
+        GLuint slot = 0;
+        m_ColorsComputeShader.setTextureUniform(position_matid_Texture, slot++);
+        m_ColorsComputeShader.setTextureUniform(normal_Shininess_Texture, slot++);
+        m_ColorsComputeShader.setTextureUniform(ambientTexture, slot++);
+        m_ColorsComputeShader.setTextureUniform(diffuseTexture, slot++);
+        m_ColorsComputeShader.setTextureUniform(specularTexture, slot++);
 
         // Pour que le compute shader sache quelle est la vraie taille de la frame
         // (les dimensions de la frame ne sont pas forcément un multiple de 16)

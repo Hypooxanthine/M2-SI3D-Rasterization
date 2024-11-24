@@ -39,8 +39,9 @@ void main( )
     }
 
     vec4 position_matid = texelFetch(g_position_matid, pixel, 0);
+        float matid = position_matid.w;
+        if (matid == 0.0) return;
         vec3 position = position_matid.xyz;
-        uint matid = uint(position_matid.w);
     vec4 normal_shininess = texelFetch(g_normal_shininess, pixel, 0);
         vec3 normal = normal_shininess.xyz;
         float shininess = normal_shininess.w;
@@ -48,7 +49,7 @@ void main( )
     vec3 diffuse = texelFetch(g_diffuse, pixel, 0).xyz;
     vec3 specular = texelFetch(g_specular, pixel, 0).xyz;
 
-    vec3 color = ambient;
+    vec3 color = vec3(0);
     for (uint i = 0; i < pointLightCount; i++)
     {
         vec3 lightPos = vec3(pointLights[i].position[0], pointLights[i].position[1], pointLights[i].position[2]);
@@ -70,7 +71,7 @@ void main( )
         color += (diffuseColor + specularColor);
     }
 
-    imageStore(outputTexture, pixel, vec4(color, 1));
+    imageStore(outputTexture, pixel, vec4(color, 1.0));
 }
 
 #endif
