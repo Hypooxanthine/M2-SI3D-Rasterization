@@ -17,6 +17,8 @@
 
 #include "FrameBuffer.h"
 #include "ShaderStorageBufferObject.h"
+#include "Shader.h"
+#include "ComputeShader.h"
 
 struct PointLight
 {
@@ -64,11 +66,9 @@ Mesh make_grid( const int n= 10 )
     return grid;
 }
 
-// utilise AppTime pour les screenshots...
 class TP : public AppTime
 {
 public:
-    // constructeur : donner les dimensions de l'image, et eventuellement la version d'openGL.
     TP( ) : AppTime(1024, 640) {}
     
     int init( )
@@ -81,16 +81,17 @@ public:
         m_camera.lookat(pmin, pmax);
 
         // etape 1 : creer le shader program
-        m_GShader= read_program(s_GShaderPath.data());
-        m_ShadersCompileOK = m_ShadersCompileOK && !program_print_errors(m_GShader);
-        m_ColorsComputeShader = read_program(s_ColorsComputeShaderPath.data());
-        m_ShadersCompileOK = m_ShadersCompileOK && !program_print_errors(m_ColorsComputeShader);
+        m_GShader.generate();
+        m_ColorsComputeShader.generate();
+
+        m_ShadersCompileOK = true;
+        m_ShadersCompileOK = m_ShadersCompileOK && m_GShader.reload(s_GShaderPath);
+        m_ShadersCompileOK = m_ShadersCompileOK && m_ColorsComputeShader.reload(s_ColorsComputeShaderPath);
 
         if (m_ShadersCompileOK)
             std::cout << "Shaders compiled successfully" << std::endl;
-        
-        // etat openGL par defaut
-        glClearColor(0.2f, 0.2f, 0.2f, 1.f);        // couleur par defaut de la fenetre
+
+
         
         glClearDepth(1.f);                          // profondeur par defaut
         glDepthFunc(GL_LESS);                       // ztest, conserver l'intersection la plus proche de la camera
@@ -139,21 +140,13 @@ public:
         return 0;   // ras, pas d'erreur
     }
     
-    // destruction des objets de l'application
     int quit( )
     {
-        // etape 3 : detruire le shader program
-        if (m_GShader)
-            release_program(m_GShader);
-        if (m_ColorsComputeShader)
-            release_program(m_ColorsComputeShader);
-        // et les objets
         m_grid.release();
         m_objet.release();
         return 0;
     }
     
-    // dessiner une nouvelle image
     int render( )
     {
         // recupere l'etat de la souris
@@ -180,25 +173,27 @@ public:
         if(key_state('r'))
         {
             clear_key_state('r');        // une seule fois...
-            m_ShadersCompileOK = true;
-            reload_program(m_GShader, s_GShaderPath.data());
-            m_ShadersCompileOK = m_ShadersCompileOK && !program_print_errors(m_GShader);
-            reload_program(m_ColorsComputeShader, s_ColorsComputeShaderPath.data());
-            m_ShadersCompileOK = m_ShadersCompileOK && !program_print_errors(m_ColorsComputeShader);
+            if (!m_GShader.reload(s_GShaderPath))
+            {
+                std::cerr << "Couldn't reload " << s_GShaderPath << "\n";
+                return 1;
+            }
+            if (!m_ColorsComputeShader.reload(s_ColorsComputeShaderPath))
+            {
+                std::cerr << "Couldn't reload " << s_ColorsComputeShaderPath << "\n";
+                return 1;
+            }
 
-            if (m_ShadersCompileOK)
-                std::cout << "Shaders compiled successfully" << std::endl;
+            std::cout << "Shaders compiled successfully" << std::endl;
         }
-
-        if (!m_ShadersCompileOK)
-            return 1;
         
         // etape 2 : dessiner m_objet avec le shader program
         // configurer le pipeline 
         gFrameBuffer.bind();
         glViewport(0, 0, window_width(), window_height());
+        glClearColor(0.f, 0.f, 0.f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glUseProgram(m_GShader);
+        m_GShader.bind();
 
         // configurer le shader program
         // . recuperer les transformations
@@ -213,15 +208,15 @@ public:
         
         // . parametrer le shader program :
         //   . transformation : la matrice declaree dans le vertex shader s'appelle mvpMatrix
-        program_uniform(m_GShader, "modelMatrix", model);
-        program_uniform(m_GShader, "mvpMatrix", mvp);
-        program_uniform(m_GShader, "normalMatrix", normalMatrix);
+        m_GShader.setUniform("modelMatrix", model);
+        m_GShader.setUniform("mvpMatrix", mvp);
+        m_GShader.setUniform("normalMatrix", normalMatrix);
         
         // . parametres "supplementaires" :
         
         // go !
         // mesh associe les donnees positions, texcoords, normals et colors aux attributs declares dans le vertex shader
-        m_objet.draw(m_GShader, /* use position */ true, /* use texcoord */ false, /* use normal */ true, /* use color */ false, /* use material index*/ false);
+        m_objet.draw(m_GShader.getRenderId(), /* use position */ true, /* use texcoord */ false, /* use normal */ true, /* use color */ false, /* use material index*/ false);
 
         // dessine aussi le repere et la grille pour le meme point de vue
         draw(m_grid, Identity(), m_camera);
@@ -231,34 +226,23 @@ public:
         // D'abord, on nettoie le framebuffer intermédiaire
         intermediateFrameBuffer.bind();
         glViewport(0, 0, window_width(), window_height());
+        glClearColor(0.2f, 0.2f, 0.2f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         // On utilise le compute shader
-        glUseProgram(m_ColorsComputeShader);
+        m_ColorsComputeShader.bind();
 
         // On envoie les données du gbuffer au compute shader
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, position_matid_Texture.getRenderId());
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, normal_Shininess_Texture.getRenderId());
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, ambientTexture.getRenderId());
-        glActiveTexture(GL_TEXTURE3);
-        glBindTexture(GL_TEXTURE_2D, diffuseTexture.getRenderId());
-        glActiveTexture(GL_TEXTURE4);
-        glBindTexture(GL_TEXTURE_2D, specularTexture.getRenderId());
-
-        // Paramètres des threads du compute shader
-        int localSizeX = 16;
-        int localSizeY = 16;
-
-        int groupCountX = (window_width() + localSizeX - 1) / localSizeX;
-        int groupCountY = (window_height() + localSizeY - 1) / localSizeY;
+        m_ColorsComputeShader.setTextureUniform(position_matid_Texture, 0);
+        m_ColorsComputeShader.setTextureUniform(normal_Shininess_Texture, 1);
+        m_ColorsComputeShader.setTextureUniform(ambientTexture, 2);
+        m_ColorsComputeShader.setTextureUniform(diffuseTexture, 3);
+        m_ColorsComputeShader.setTextureUniform(specularTexture, 4);
 
         // Pour que le compute shader sache quelle est la vraie taille de la frame
         // (les dimensions de la frame ne sont pas forcément un multiple de 16)
-        program_uniform(m_ColorsComputeShader, "frameWidth", window_width());
-        program_uniform(m_ColorsComputeShader, "frameHeight", window_height());
+        m_ColorsComputeShader.setUniform("frameWidth", window_width());
+        m_ColorsComputeShader.setUniform("frameHeight", window_height());
 
         // On envoie les lumières au compute shader
         lightsSSBO.bind();
@@ -266,7 +250,11 @@ public:
         // Texture sur laquelle on va écrire les couleurs finales depuis le compute shader
         glBindImageTexture(0, colorTexture.getRenderId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
-        glDispatchCompute(groupCountX, groupCountY, 1);
+        m_ColorsComputeShader.dispatch(
+            16, 16, 1,
+            window_width(), window_height(), 1
+        );
+        
 
         // On attend que le compute shader ait fini
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -282,7 +270,8 @@ protected:
     Mesh m_objet;
     Mesh m_grid;
     Orbiter m_camera;
-    GLuint m_GShader, m_ColorsComputeShader;
+    Shader m_GShader;
+    ComputeShader m_ColorsComputeShader;
     bool m_ShadersCompileOK = true;
 
     Texture2D zbufferTexture;
