@@ -8,11 +8,6 @@ Terrain::Terrain(const TerrainSpecs& specs)
 {
     loadData();
     initCubeTransforms();
-
-    GLuint block = glGetUniformBlockIndex(m_CubeShaderID, "instanceData");
-    glUniformBlockBinding(m_CubeShaderID, block, 0);
-
-    glBindBufferBase(GL_UNIFORM_BUFFER, block, m_InstancesData);
 }
 
 Terrain::Terrain()
@@ -21,28 +16,27 @@ Terrain::Terrain()
 
 Terrain::~Terrain()
 {
-    release_program(m_CubeShaderID);
-    glDeleteTextures(1, &m_SpriteSheetTextureID);
 }
 
 void Terrain::loadData()
 {
     m_HeightMap = read_image("data/terrain/terrain.png");
 
-    m_SpriteSheetTextureID = read_texture(0, "data/CubeWorld/Blocks_PixelArt.png");
+    auto imageData = read_image_data("data/CubeWorld/Blocks_PixelArt.png");
+    ASSERT(imageData.size > 0, "Could not load data/CubeWorld/Blocks_PixelArt.png");
+    ASSERT(m_SpriteSheetTexture.loadFromImage(imageData), "Could not load spritesheet from image data");
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    m_GrassBash.loadMesh("data/CubeWorld/Pixel Blocks/Grass.obj");
+    ASSERT(m_GrassBash.load("data/CubeWorld/Pixel Blocks/OBJ/Grass.obj"), "Could not load data/CubeWorld/Pixel Blocks/OBJ/Grass.obj");
     
-    m_CubeShaderID = read_program("data/shaders/TP_SI3D/Cube.glsl");
-    program_print_errors(m_CubeShaderID);
+    ASSERT(m_CubeShader.load("data/shaders/TP_SI3D/Cube.glsl"), "Could not load data/shaders/TP_SI3D/Cube.glsl");
 }
 
 void Terrain::initCubeTransforms()
 {
     constexpr float CUBE_INITIAL_SIZE = 2.f;
-    m_CubeTransforms.reserve(m_Specs.cubesWidth * m_Specs.cubesWidth);
+    m_GrassBash.reserveInstances(m_Specs.cubesWidth * m_Specs.cubesWidth);
 
     for (int i = 0; i < m_Specs.cubesWidth; i++)
     {
@@ -56,24 +50,22 @@ void Terrain::initCubeTransforms()
             const float Y = std::floor(normalizedY * static_cast<float>(m_Specs.cubesHeight)) * m_Specs.cubeSize * CUBE_INITIAL_SIZE;
             const float Z = (static_cast<float>(j)) * m_Specs.cubeSize * CUBE_INITIAL_SIZE;
 
-            m_CubeTransforms.push_back(Transpose(Translation(X, Y, Z) * Scale(m_Specs.cubeSize)));
+            m_GrassBash.pushInstance(Transpose(Translation(X, Y, Z) * Scale(m_Specs.cubeSize)));
+            std::cout << "Cube position (X, Y, Z): (" << X << ", " << Y << ", " << Z << ")\n";
         }
     }
 
-    glGenBuffers(1, &m_InstancesData);
-    glBindBuffer(GL_UNIFORM_BUFFER, m_InstancesData);
-    glBufferData(GL_UNIFORM_BUFFER, m_CubeTransforms.size() * sizeof(Transform), m_CubeTransforms.data(), GL_STATIC_DRAW);
+    m_GrassBash.setupUniformBuffer(m_CubeShader);
 }
 
 void Terrain::draw(const Transform& view, const Transform& projection) const
 {
-    glUseProgram(m_CubeShaderID);
+    m_CubeShader.bind();
 
-    glUniform1i(glGetUniformLocation(m_CubeShaderID, "spriteSheet"), 0);
-    glBindTexture(GL_TEXTURE_2D, m_SpriteSheetTextureID);
+    m_CubeShader.setTextureUniform(m_SpriteSheetTexture, 0);
 
-    glUniformMatrix4fv(glGetUniformLocation(m_CubeShaderID, "projectionMatrix"), 1, GL_TRUE, projection.data());
-    glUniformMatrix4fv(glGetUniformLocation(m_CubeShaderID, "viewMatrix"), 1, GL_TRUE, view.data());
+    m_CubeShader.setUniform("projectionMatrix", projection);
+    m_CubeShader.setUniform("viewMatrix", view);
 
     m_GrassBash.draw();
 }

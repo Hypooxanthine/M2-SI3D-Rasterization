@@ -11,7 +11,7 @@ public:
     Cube();
     ~Cube();
 
-    void load(const std::string& filePath);
+    bool load(const std::string& filePath);
 
     inline const Mesh& getMesh() const { return m_Mesh; }
 

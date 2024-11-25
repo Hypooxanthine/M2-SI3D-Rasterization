@@ -10,9 +10,9 @@ solution "gKit2light"
         defines { "DEBUG" }
         if _PREMAKE_VERSION >="5.0" then
             symbols "on"
-            cppdialect "c++11"
+            cppdialect "c++17"
         else
-            buildoptions { "-std=c++11" }
+            buildoptions { "-std=c++17" }
             flags { "Symbols" }
         end
     
@@ -266,31 +266,31 @@ project("TP_SI3D")
     language "C++"
     kind "ConsoleApp"
     targetdir "bin"
-    files ( gkit_files )
+    files ( gkit_files, "src/MyThings" )
     files { gkit_dir,
             "TP_SI3D/src/TP_SI3D.cpp",
             "TP_SI3D/src/Terrain.cpp",
             "TP_SI3D/src/Cube.cpp",
             "TP_SI3D/src/CubeBash.cpp",
     }
-    includedirs { gkit_dir .. "/TP_SI3D/include" }
+    includedirs { gkit_dir .. "/TP_SI3D/include" , gkit_dir .. "/src/MyThings" }
 
 project("TP2_SI3D")
     language "C++"
     kind "ConsoleApp"
     targetdir "bin"
-    files ( gkit_files )
+    files ( gkit_files, "src/MyThings" )
     files { gkit_dir,
             "TP2_SI3D/src/TP2_SI3D.cpp",
     }
-    includedirs { gkit_dir .. "/TP2_SI3D/include" }
+    includedirs { gkit_dir .. "/TP2_SI3D/include" , gkit_dir .. "/src/MyThings" }
 
 project("TP_CG")
     language "C++"
     kind "ConsoleApp"
     targetdir "bin"
-    files ( gkit_files )
+    files ( gkit_files, "src/MyThings" )
     files { gkit_dir,
             "TP_CG/src/TP_CG.cpp",
     }
-    includedirs { gkit_dir .. "/TP_CG/include" }
+    includedirs { gkit_dir .. "/TP_CG/include", gkit_dir .. "/src/MyThings" }

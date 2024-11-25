@@ -17,10 +17,13 @@ Cube::~Cube()
     m_Mesh.release();
 }
 
-void Cube::load(const std::string& filePath)
+bool Cube::load(const std::string& filePath)
 {
     m_Mesh = read_indexed_mesh("data/CubeWorld/Pixel Blocks/OBJ/Grass.obj");
+    if (m_Mesh == Mesh::error()) return false;
+
     m_VAO = m_Mesh.create_buffers(true, true, false, false);
+    return true;
 }
 
 void Cube::bind() const

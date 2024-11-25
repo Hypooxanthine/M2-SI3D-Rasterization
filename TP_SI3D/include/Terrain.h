@@ -8,14 +8,16 @@
 #include <vector>
 
 #include "CubeBash.h"
+#include "Texture2D.h"
+#include "Shader.h"
 
 class Terrain
 {
 public:
     struct TerrainSpecs
     {
-        int cubesWidth = 200;
-        int cubesHeight = 10;
+        int cubesWidth = 100;
+        int cubesHeight = 20;
         float cubeSize = .01f;
     };
 public:
@@ -34,10 +36,9 @@ private:
     
     Image m_HeightMap;
 
-    GLuint m_SpriteSheetTextureID;
+    Texture2D m_SpriteSheetTexture;
 
     CubeBash m_GrassBash;
 
-    GLuint m_CubeShaderID;
-    GLuint m_InstancesData;
+    Shader m_CubeShader;
 };

@@ -2,6 +2,8 @@
 
 #include "Cube.h"
 
+#include "Shader.h"
+
 class CubeBash
 {
 public:
@@ -9,10 +11,12 @@ public:
     CubeBash();
     ~CubeBash();
 
-    void load(const std::string& filePath, GLuint program, GLuint uniformBlock, GLuint blockAttachment);
+    bool load(const std::string& filePath);
 
     void reserveInstances(std::size_t nb);
     void pushInstance(const Transform& modelMatrix);
+
+    void setupUniformBuffer(const Shader& shader);
 
     void draw() const;
 

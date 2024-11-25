@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string_view>
+
+#include "Texture2D.h"
 #include "program.h"
 #include "uniforms.h"
 

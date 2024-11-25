@@ -39,6 +39,19 @@ public:
         release();
     }
 
+    inline bool loadFromImage(const ImageData& image)
+    {
+        release();
+
+        m_RenderID = make_texture(0, image);
+        if (m_RenderID == 0) return false;
+        
+        m_Width = image.width;
+        m_Height = image.height;
+
+        return true;
+    }
+
     inline void generateForDepth(size_t width, size_t height)
     {
         release();

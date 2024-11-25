@@ -1,1 +1,1 @@
-./build.sh && ./bin/TP_SI3D
+./build.sh && echo 'Launching program' && echo && ./bin/TP_SI3D

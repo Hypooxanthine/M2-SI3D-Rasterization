@@ -1,1 +1,1 @@
-make TP_SI3D -j
+make TP_SI3D -j config=release

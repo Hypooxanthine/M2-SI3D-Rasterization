@@ -1,5 +1,10 @@
 #include "CubeBash.h"
 
+CubeBash::CubeBash(const std::string& filePath)
+{
+    load(filePath);
+}
+
 CubeBash::CubeBash()
 {
 
@@ -10,12 +15,9 @@ CubeBash::~CubeBash()
 
 }
 
-void CubeBash::load(const std::string& filePath, GLuint program, GLuint uniformBlock, GLuint blockAttachment)
+bool CubeBash::load(const std::string& filePath)
 {
-    m_Cube.load(filePath);
-
-    glUniformBlockBinding(program, uniformBlock, blockAttachment);
-    glBindBufferBase(GL_UNIFORM_BUFFER, uniformBlock, m_InstancesData);
+    return m_Cube.load(filePath);
 }
 
 void CubeBash::reserveInstances(std::size_t nb)
@@ -27,6 +29,23 @@ void CubeBash::pushInstance(const Transform& modelMatrix)
 {
     m_Transforms.push_back(modelMatrix);
 }
+
+void CubeBash::setupUniformBuffer(const Shader& shader)
+{
+    GLuint block = glGetUniformBlockIndex(shader.getRenderId(), "instanceData");
+    ASSERT(block != GL_INVALID_INDEX, "Uniform block 'instanceData' not found in shader");
+
+    glUniformBlockBinding(shader.getRenderId(), block, 0);
+
+    glGenBuffers(1, &m_InstancesData);
+    glBindBuffer(GL_UNIFORM_BUFFER, m_InstancesData);
+    glBufferData(GL_UNIFORM_BUFFER, m_Transforms.size() * sizeof(Transform), m_Transforms.data(), GL_STATIC_DRAW);
+
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, m_InstancesData);
+
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
 
 void CubeBash::draw() const
 {

@@ -1,5 +1,5 @@
 
-#version 330
+#version 430
 
 #ifdef VERTEX_SHADER
 
@@ -41,7 +41,7 @@ in vec3 v_normal;
 in vec3 v_position;
 
 uniform mat4 viewMatrix;
-uniform sampler2D spriteSheet;
+layout(location = 0) uniform sampler2D spriteSheet;
 
 out vec4 fragment_color;
 
