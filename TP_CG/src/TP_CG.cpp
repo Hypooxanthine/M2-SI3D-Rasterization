@@ -22,8 +22,8 @@
 
 struct PointLight
 {
-    Point position;
-    Point color;
+    alignas(16) Point position;
+    alignas(16) Point color;
     float intensity;
     float radius;
 };
@@ -90,10 +90,9 @@ public:
         // Initialisation des textures
         zbufferTexture.generateForDepth(s_TexturesWidth, s_TexturesHeight);
         position_matid_Texture.generateForColor(s_TexturesWidth, s_TexturesHeight, true);
-        normal_Shininess_Texture.generateForColor(s_TexturesWidth, s_TexturesHeight, true);
-        ambientTexture.generateForColor(s_TexturesWidth, s_TexturesHeight, true);
-        diffuseTexture.generateForColor(s_TexturesWidth, s_TexturesHeight, true);
-        specularTexture.generateForColor(s_TexturesWidth, s_TexturesHeight, true);
+        normalTexture.generateForColor(s_TexturesWidth, s_TexturesHeight, true);
+        albedoTexture.generateForColor(s_TexturesWidth, s_TexturesHeight, true);
+        metallic_diffuse_shininessTexture.generateForColor(s_TexturesWidth, s_TexturesHeight, true);
         colorTexture.generateForColor(s_TexturesWidth, s_TexturesHeight, true);
 
         // Initialisation du framebuffer de la fenêtre.
@@ -105,10 +104,9 @@ public:
         // Initialisation du frambuffer pour le deffered rendering (GBuffer)
         gFrameBuffer.generate();
         gFrameBuffer.attachTexture(position_matid_Texture, FrameBuffer::TextureAttachment::Color, 0);
-        gFrameBuffer.attachTexture(normal_Shininess_Texture, FrameBuffer::TextureAttachment::Color, 0);
-        gFrameBuffer.attachTexture(ambientTexture, FrameBuffer::TextureAttachment::Color, 0);
-        gFrameBuffer.attachTexture(diffuseTexture, FrameBuffer::TextureAttachment::Color, 0);
-        gFrameBuffer.attachTexture(specularTexture, FrameBuffer::TextureAttachment::Color, 0);
+        gFrameBuffer.attachTexture(normalTexture, FrameBuffer::TextureAttachment::Color, 0);
+        gFrameBuffer.attachTexture(albedoTexture, FrameBuffer::TextureAttachment::Color, 0);
+        gFrameBuffer.attachTexture(metallic_diffuse_shininessTexture, FrameBuffer::TextureAttachment::Color, 0);
         gFrameBuffer.attachTexture(zbufferTexture, FrameBuffer::TextureAttachment::Depth, 0);
         gFrameBuffer.setupBindings();
 
@@ -120,12 +118,17 @@ public:
         // Initialisation du shader storage buffer object pour les lumières
         lights.first = 2;
         lights.second = {
-            PointLight{{5, 5, 0}, {1, 0, 0}, 10.f, 100.f},
-            PointLight{{0, 5, 5}, {0, 0, 1}, 10.f, 100.f}
+            PointLight{{5, 5, 0}, {1, 1, 1}, 3.f, 100.f},
+            PointLight{{0, 5, 5}, {1, 1, 1}, 3.f, 100.f}
         };
         lightsSSBO.generate();
         lightsSSBO.setBindingPoint(0);
         lightsSSBO.setData(&lights.first, sizeof(unsigned int) + lights.second.size() * sizeof(PointLight));
+
+        // Face culling
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        glFrontFace(GL_CCW);
 
         return 0;   // ras, pas d'erreur
     }
@@ -219,11 +222,11 @@ public:
 
         // On envoie les données du gbuffer au compute shader
         GLuint slot = 0;
-        m_ColorsComputeShader.setTextureUniform(position_matid_Texture, slot++);
-        m_ColorsComputeShader.setTextureUniform(normal_Shininess_Texture, slot++);
-        m_ColorsComputeShader.setTextureUniform(ambientTexture, slot++);
-        m_ColorsComputeShader.setTextureUniform(diffuseTexture, slot++);
-        m_ColorsComputeShader.setTextureUniform(specularTexture, slot++);
+        m_ColorsComputeShader.setTextureUniform(position_matid_Texture, slot++, "g_position_matid");
+        m_ColorsComputeShader.setTextureUniform(normalTexture, slot++, "g_normal");
+        m_ColorsComputeShader.setTextureUniform(albedoTexture, slot++, "g_albedo");
+        m_ColorsComputeShader.setTextureUniform(metallic_diffuse_shininessTexture, slot++, "g_metallic_diffuse_shininess");
+        m_ColorsComputeShader.setUniform("cameraPos", m_camera.position());
 
         // Pour que le compute shader sache quelle est la vraie taille de la frame
         // (les dimensions de la frame ne sont pas forcément un multiple de 16)
@@ -261,7 +264,7 @@ protected:
     bool m_ShadersCompileOK = true;
 
     Texture2D zbufferTexture;
-    Texture2D position_matid_Texture, normal_Shininess_Texture, ambientTexture, diffuseTexture, specularTexture;
+    Texture2D position_matid_Texture, normalTexture, albedoTexture, metallic_diffuse_shininessTexture;
     Texture2D colorTexture; // Cette texture contiendra la couleur finale de la frame
     FrameBuffer windowFrameBuffer, gFrameBuffer, intermediateFrameBuffer;
     ShaderStorageBufferObject lightsSSBO;

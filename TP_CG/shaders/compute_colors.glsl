@@ -3,10 +3,12 @@
 
 #ifdef COMPUTE_SHADER
 
+#define M_PI 3.1415926535897932384626433832795
+
 struct PointLight
 {
-    float position[3];
-    float color[3];
+    vec4 position;
+    vec4 color;
     float intensity;
     float radius;
 };
@@ -19,14 +21,14 @@ layout(std430, binding = 0) buffer LightBlock
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
-layout(location = 0) uniform sampler2D g_position_matid;
-layout(location = 1) uniform sampler2D g_normal_shininess;
-layout(location = 2) uniform sampler2D g_ambient;
-layout(location = 3) uniform sampler2D g_diffuse;
-layout(location = 4) uniform sampler2D g_specular;
+uniform sampler2D g_position_matid;
+uniform sampler2D g_normal;
+uniform sampler2D g_albedo;
+uniform sampler2D g_metallic_diffuse_shininess;
 
 uniform int frameWidth;
 uniform int frameHeight;
+uniform vec3 cameraPos;
 
 layout(binding = 0, rgba32f) uniform image2D outputTexture;
 
@@ -41,34 +43,38 @@ void main( )
     vec4 position_matid = texelFetch(g_position_matid, pixel, 0);
         float matid = position_matid.w;
         if (matid == 0.0) return;
-        vec3 position = position_matid.xyz;
-    vec4 normal_shininess = texelFetch(g_normal_shininess, pixel, 0);
-        vec3 normal = normal_shininess.xyz;
-        float shininess = normal_shininess.w;
-    vec3 ambient = texelFetch(g_ambient, pixel, 0).xyz;
-    vec3 diffuse = texelFetch(g_diffuse, pixel, 0).xyz;
-    vec3 specular = texelFetch(g_specular, pixel, 0).xyz;
+        vec3 p = position_matid.xyz;
+    vec3 normal = texelFetch(g_normal, pixel, 0).xyz;
+    vec3 albedo = texelFetch(g_albedo, pixel, 0).xyz;
+    vec3 metallic_diffuse_shininess = texelFetch(g_metallic_diffuse_shininess, pixel, 0).xyz;
+        float metallic = metallic_diffuse_shininess.x;
+        float diffuse = metallic_diffuse_shininess.y;
+        float shininess = metallic_diffuse_shininess.z;
 
-    vec3 color = vec3(0);
+    vec3 color = vec3(0.0);
     for (uint i = 0; i < pointLightCount; i++)
     {
-        vec3 lightPos = vec3(pointLights[i].position[0], pointLights[i].position[1], pointLights[i].position[2]);
-        vec3 lightColor = vec3(pointLights[i].color[0], pointLights[i].color[1], pointLights[i].color[2]);
+        PointLight pl = pointLights[i];
+        vec3 source = pl.position.xyz;
+        vec3 lightColor = pl.color.xyz;
+        
+        vec3 o = normalize(cameraPos - p);
+        vec3 l = normalize(source - p);
+        vec3 h = normalize(o + l);
+        vec3 nn = normalize(normal);
 
-        vec3 lightDir = lightPos - position;
-        float distance = length(lightDir);
-        lightDir = normalize(lightDir);
+        float cos_theta = max(dot(nn, l), 0.0);
+        float cos_theta_h = dot(nn, h);
 
-        float attenuation = 1.0 / (1.0 + 0.1 * distance + 0.01 * distance * distance);
-        float diffuseFactor = max(dot(normal, lightDir), 0.0);
-        vec3 diffuseColor = diffuse * lightColor * pointLights[i].intensity * diffuseFactor * attenuation;
+        // Composante diffuse
+        float diffuseFactor = diffuse / M_PI;
+        vec3 diffuseColor = diffuseFactor * lightColor * albedo * cos_theta;
 
-        vec3 viewDir = normalize(-position);
-        vec3 reflectDir = reflect(-lightDir, normal);
-        float specularFactor = pow(max(dot(viewDir, reflectDir), 0.0), 10.0);
-        vec3 specularColor = specular * lightColor * pointLights[i].intensity * specularFactor * attenuation;
+        // Composante spéculaire
+        float specularFactor = (shininess + 8) / (M_PI * 8) * pow(cos_theta_h, shininess);
+        vec3 specularColor = specularFactor * lightColor * cos_theta;
 
-        color += (diffuseColor + specularColor);
+        color += ((1.0 - metallic) * diffuseColor + specularColor);
     }
 
     imageStore(outputTexture, pixel, vec4(color, 1.0));

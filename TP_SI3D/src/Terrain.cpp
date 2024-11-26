@@ -62,7 +62,7 @@ void Terrain::draw(const Transform& view, const Transform& projection) const
 {
     m_CubeShader.bind();
 
-    m_CubeShader.setTextureUniform(m_SpriteSheetTexture, 0);
+    m_CubeShader.setTextureUniform(m_SpriteSheetTexture, 0, "spriteSheet");
 
     m_CubeShader.setUniform("projectionMatrix", projection);
     m_CubeShader.setUniform("viewMatrix", view);

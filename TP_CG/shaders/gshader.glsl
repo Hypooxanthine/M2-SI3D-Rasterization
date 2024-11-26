@@ -27,22 +27,19 @@ in vec3 v_position;
 in vec3 v_normal;
 
 layout(location = 0) out vec4 g_position_matid;
-layout(location = 1) out vec4 g_normal_shininess;
-layout(location = 2) out vec4 g_ambient;
-layout(location = 3) out vec4 g_diffuse;
-layout(location = 4) out vec4 g_specular;
+layout(location = 1) out vec4 g_normal;
+layout(location = 2) out vec4 g_albedo;
+layout(location = 3) out vec4 g_metallic_diffuse_shininess;
 
 void main( )
 {
     g_position_matid.xyz = v_position;
-    g_normal_shininess.xyz = v_normal;
+    g_normal.xyz = v_normal;
 
-    #if 1 // Phong: matid = 1
-        g_position_matid.w = 1;
-        g_normal_shininess.w = 10.0;
-        g_ambient = vec4(0.5, 0.1, 0.1, 1.0);
-        g_diffuse = vec4(0.8, 0.2, 0.2, 1.0);
-        g_specular = vec4(0.8, 0.8, 0.8, 1.0);
+    #if 1 // Blinn-Phong
+        g_position_matid.w = 1; // Blinn-Phong matid = 1
+        g_albedo = vec4(1.0, 1.0, 1.0, 1.0);
+        g_metallic_diffuse_shininess = vec4(.0, .3, 50.0, 1.0);
     #endif
 }
 

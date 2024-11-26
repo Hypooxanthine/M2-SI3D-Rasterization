@@ -80,7 +80,7 @@ public:
         program_uniform(m_RenderId, name.data(), value);
     }
 
-    inline void setTextureUniform(const Texture2D& texture, GLuint slot) const;
+    inline void setTextureUniform(const Texture2D& texture, GLuint slot, const std::string_view& name) const;
 
     inline constexpr GLuint getRenderId() const { return m_RenderId; }
 
@@ -90,8 +90,7 @@ private:
 
 #include "Texture2D.h"
 
-inline void Shader::setTextureUniform(const Texture2D& texture, GLuint slot) const
-{    
-    glActiveTexture(GL_TEXTURE0 + slot);
-    glBindTexture(GL_TEXTURE_2D, texture.getRenderId());
+inline void Shader::setTextureUniform(const Texture2D& texture, GLuint slot, const std::string_view& name) const
+{
+    program_use_texture(m_RenderId, name.data(), slot, texture.getRenderId());
 }
