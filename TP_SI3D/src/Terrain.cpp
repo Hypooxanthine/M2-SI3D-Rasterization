@@ -51,7 +51,6 @@ void Terrain::initCubeTransforms()
             const float Z = (static_cast<float>(j)) * m_Specs.cubeSize * CUBE_INITIAL_SIZE;
 
             m_GrassBash.pushInstance(Transpose(Translation(X, Y, Z) * Scale(m_Specs.cubeSize)));
-            std::cout << "Cube position (X, Y, Z): (" << X << ", " << Y << ", " << Z << ")\n";
         }
     }
 

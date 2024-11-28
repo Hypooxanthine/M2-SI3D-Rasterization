@@ -195,7 +195,7 @@ void program_uniform( const GLuint program, const char *uniform, const std::vect
     glUniformMatrix4fv( location(program, uniform, v.size()), v.size(), GL_TRUE, v[0].data() );
 }
 
-void program_use_texture( const GLuint program, const char *uniform, const int unit, const GLuint texture, const GLuint sampler )
+void program_use_texture( const GLuint program, const char *uniform, const int unit, const GLuint texture, const GLuint sampler, const GLenum target )
 {
     // verifie que l'uniform existe
     int id= location(program, uniform);
@@ -205,7 +205,7 @@ void program_use_texture( const GLuint program, const char *uniform, const int u
     // selectionne l'unite de texture
     glActiveTexture(GL_TEXTURE0 + unit);
     // configure la texture
-    glBindTexture(GL_TEXTURE_2D, texture);
+    glBindTexture(target, texture);
     
     // les parametres de filtrage
     glBindSampler(unit, sampler);

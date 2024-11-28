@@ -3,6 +3,7 @@
 #include <string_view>
 
 #include "Texture2D.h"
+#include "Texture3D.h"
 #include "program.h"
 #include "uniforms.h"
 
@@ -82,6 +83,8 @@ public:
 
     inline void setTextureUniform(const Texture2D& texture, GLuint slot, const std::string_view& name) const;
 
+    inline void setTextureUniform(const Texture3D& texture, GLuint slot, const std::string_view& name) const;
+
     inline constexpr GLuint getRenderId() const { return m_RenderId; }
 
 private:
@@ -93,4 +96,9 @@ private:
 inline void Shader::setTextureUniform(const Texture2D& texture, GLuint slot, const std::string_view& name) const
 {
     program_use_texture(m_RenderId, name.data(), slot, texture.getRenderId());
+}
+
+inline void Shader::setTextureUniform(const Texture3D& texture, GLuint slot, const std::string_view& name) const
+{
+    program_use_texture(m_RenderId, name.data(), slot, texture.getRenderId(), 0, GL_TEXTURE_2D_ARRAY);
 }
