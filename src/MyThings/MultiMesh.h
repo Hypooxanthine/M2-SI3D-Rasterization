@@ -17,6 +17,10 @@ struct DrawElementsIndirectCommand
     GLuint baseInstance;
 };
 
+/**
+ * Stocke plusieurs VBO et EBO concaténés et garde en mémoire leurs positions
+ * pour utiliser glMultiDrawElementsIndirect plus tard
+ */
 class MultiMesh
 {
 public:
@@ -75,19 +79,23 @@ public:
         m_NeedsUpdate = true;
     }
 
-    inline constexpr size_t getMeshCount() const { return m_IndirectCommands.size(); }
-    inline constexpr GLuint getVao() const { return m_VAO; }
-    inline constexpr GLuint getVbo() const { return m_VBO; }
-    inline constexpr GLuint getEbo() const { return m_EBO; }
-    inline constexpr GLuint getMeshInstanceCount(size_t meshIndex) const { return m_IndirectCommands.at(meshIndex).instanceCount; }
-    inline constexpr void setMeshInstanceCount(size_t meshindex, size_t instanceCount) { m_IndirectCommands.at(meshindex).instanceCount = instanceCount; }
-
     inline GLuint createBuffers()
     {
         if (m_NeedsUpdate) updateBuffers();
 
         return m_VAO;
     }
+
+    inline void draw(GLenum mode = GL_TRIANGLES) const
+    {
+    }
+
+    inline constexpr size_t getMeshCount() const { return m_IndirectCommands.size(); }
+    inline constexpr GLuint getVao() const { return m_VAO; }
+    inline constexpr GLuint getVbo() const { return m_VBO; }
+    inline constexpr GLuint getEbo() const { return m_EBO; }
+    inline constexpr GLuint getMeshInstanceCount(size_t meshIndex) const { return m_IndirectCommands.at(meshIndex).instanceCount; }
+    inline constexpr void setMeshInstanceCount(size_t meshindex, size_t instanceCount) { m_IndirectCommands.at(meshindex).instanceCount = instanceCount; }
 
     inline void updateBuffers()
     {
@@ -105,7 +113,7 @@ public:
         glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
         glBufferData(
             GL_ARRAY_BUFFER,
-            m_Vertices.size() * sizeof(Vertex),
+            m_Vertices.size() * sizeof(decltype(m_Vertices)::value_type),
             m_Vertices.data(),
             GL_STATIC_DRAW
         );
@@ -114,7 +122,7 @@ public:
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
         glBufferData(
             GL_ELEMENT_ARRAY_BUFFER,
-            m_Indices.size() * sizeof(Vertex),
+            m_Indices.size() * sizeof(decltype(m_Indices)::value_type),
             m_Indices.data(),
             GL_STATIC_DRAW
         );
