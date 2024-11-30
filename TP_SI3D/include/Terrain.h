@@ -16,7 +16,7 @@ class Terrain
 public:
     struct TerrainSpecs
     {
-        int cubesWidth = 100;
+        int cubesWidth = 50;
         int cubesHeight = 20;
         float cubeSize = .01f;
     };
