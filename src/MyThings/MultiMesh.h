@@ -31,7 +31,7 @@ public:
 
     inline ~MultiMesh()
     {
-
+        release();
     }
 
     // Ne va pas créer les buffers via Mesh::create_buffers(). Ils seront recréés par la classe MultiMesh.
@@ -76,18 +76,58 @@ public:
         command.baseInstance = 0;
 
         /* A mesh was added, we need to update buffers */
-        m_NeedsUpdate = true;
+        m_NeedsUpdateMesh = true;
+        m_NeedsUpdateCommand = true;
     }
 
     inline GLuint createBuffers()
     {
-        if (m_NeedsUpdate) updateBuffers();
+        if (m_NeedsUpdateMesh) updateBuffers();
 
         return m_VAO;
     }
 
     inline void draw(GLenum mode = GL_TRIANGLES) const
     {
+        glBindVertexArray(m_VAO);
+        glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_DrawIndirectBO);
+
+        glMultiDrawElementsIndirect(
+            mode,
+            GL_UNSIGNED_INT,
+            nullptr,
+            m_IndirectCommands.size(),
+            0
+        );
+    }
+
+    inline void release()
+    {
+        releaseMeshBuffers();
+        releaseCommandsBuffer();
+        m_Vertices.clear();
+        m_Indices.clear();
+        m_IndirectCommands.clear();
+    }
+
+    inline void releaseMeshBuffers()
+    {
+        if (m_VAO != 0) glDeleteVertexArrays(1, &m_VAO);
+        if (m_VBO != 0) glDeleteBuffers(1, &m_VBO);
+        if (m_EBO != 0) glDeleteBuffers(1, &m_EBO);
+
+        m_VAO = 0;
+        m_VBO = 0;
+        m_EBO = 0;
+
+        m_NeedsUpdateMesh = true;
+    }
+
+    inline void releaseCommandsBuffer()
+    {
+        if (m_DrawIndirectBO != 0) glDeleteBuffers(1, &m_DrawIndirectBO);
+        m_DrawIndirectBO = 0;
+        m_NeedsUpdateCommand = true;
     }
 
     inline constexpr size_t getMeshCount() const { return m_IndirectCommands.size(); }
@@ -100,9 +140,7 @@ public:
     inline void updateBuffers()
     {
         // Nettoyage des buffers s'ils ont déjà été créés
-        if (m_VAO != 0) glDeleteVertexArrays(1, &m_VAO);
-        if (m_VBO != 0) glDeleteBuffers(1, &m_VBO);
-        if (m_EBO != 0) glDeleteBuffers(1, &m_EBO);
+        releaseMeshBuffers();
 
         // Création des buffers
         glGenBuffers(1, &m_VBO);
@@ -161,14 +199,35 @@ public:
             );
 
         // C'est terminé
-        m_NeedsUpdate = false;
+        m_NeedsUpdateMesh = false;
+
+        if (m_NeedsUpdateCommand) updateCommandsBuffer();
+    }
+
+    inline void updateCommandsBuffer()
+    {
+        // Nettoyage (pourrait peut-être amélioré en faisant du subdata, mais ça ferait potentiellement beaucoup d'aller-retours cpu/gpu)
+        releaseCommandsBuffer();
+
+        glGenBuffers(1, &m_DrawIndirectBO);
+        glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_DrawIndirectBO);
+        glBufferData(
+            GL_DRAW_INDIRECT_BUFFER,
+            m_IndirectCommands.size() * sizeof(decltype(m_IndirectCommands)::value_type),
+            m_IndirectCommands.data(),
+            GL_DYNAMIC_DRAW // Sera souvent mis à jour
+        );
+
+        // C'est terminé
+        m_NeedsUpdateCommand = true;
     }
 
 private:
     std::vector<Vertex> m_Vertices;
     std::vector<GLuint> m_Indices;
     std::vector<DrawElementsIndirectCommand> m_IndirectCommands;
-    bool m_NeedsUpdate = true; // Même si on n'a ajouté aucun mesh au départ, on peut toujours créer des buffers vides...
+    bool m_NeedsUpdateMesh = true; // Même si on n'a ajouté aucun mesh au départ, on peut toujours créer des buffers vides...
+    bool m_NeedsUpdateCommand = true;
 
-    GLuint m_VBO = 0, m_EBO = 0, m_VAO = 0;
+    GLuint m_VBO = 0, m_EBO = 0, m_VAO = 0, m_DrawIndirectBO = 0;
 };
