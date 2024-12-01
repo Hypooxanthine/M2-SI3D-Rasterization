@@ -19,7 +19,7 @@ struct DrawElementsIndirectCommand
 
 /**
  * Stocke plusieurs VBO et EBO concaténés et garde en mémoire leurs positions
- * pour utiliser glMultiDrawElementsIndirect plus tard
+ * pour utiliser glMultiDrawElementsIndirect plus tard (donc au final, 1 VBO et 1 EBO)
  */
 class MultiMesh
 {
@@ -171,7 +171,7 @@ public:
             glEnableVertexAttribArray(0);
             glVertexAttribPointer(
                 0, // Index de l'attribut
-                sizeof(decltype(Vertex::position)), // Taille de l'élement position
+                3, // Position en 3 dimensions
                 GL_FLOAT, // Type de l'élément position sur le gpu
                 GL_FALSE, // Non normalisé
                 sizeof(Vertex), // Nombre d'octets entre le début de deux attributs consécutifs dans le VBO
@@ -181,7 +181,7 @@ public:
             glEnableVertexAttribArray(1);
             glVertexAttribPointer(
                 1,
-                sizeof(decltype(Vertex::texcoords)),
+                2,
                 GL_FLOAT,
                 GL_FALSE,
                 sizeof(Vertex),
@@ -191,7 +191,7 @@ public:
             glEnableVertexAttribArray(2);
             glVertexAttribPointer(
                 2,
-                sizeof(decltype(Vertex::normal)),
+                3,
                 GL_FLOAT,
                 GL_FALSE,
                 sizeof(Vertex),
