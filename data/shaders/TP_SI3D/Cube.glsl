@@ -1,5 +1,5 @@
 
-#version 430
+#version 460
 
 #ifdef VERTEX_SHADER
 
@@ -23,11 +23,11 @@ out vec2 v_texcoord;
 
 void main( )
 {
-    vec4 worldPosition = modelMatrix[gl_InstanceID] * vec4(position, 1);
+    vec4 worldPosition = modelMatrix[gl_InstanceID + gl_BaseInstance] * vec4(position, 1);
 
     v_position = worldPosition.xyz;
     v_texcoord = texcoord;
-    v_normal = mat3(transpose(inverse(modelMatrix[gl_InstanceID]))) * normal;
+    v_normal = mat3(transpose(inverse(modelMatrix[gl_InstanceID + gl_BaseInstance]))) * normal;
     
     gl_Position = projectionMatrix * viewMatrix * worldPosition;
 }

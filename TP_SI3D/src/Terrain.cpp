@@ -65,7 +65,7 @@ void Terrain::initCubeTransforms()
 
     m_SSBO.generate();
     m_SSBO.setBindingPoint(0);
-    m_SSBO.setData(m_InstanceTransforms.data(), m_InstanceTransforms.size());
+    m_SSBO.setData(m_InstanceTransforms.data(), m_InstanceTransforms.size() * sizeof(Transform));
 }
 
 void Terrain::draw(const Transform& view, const Transform& projection) const
