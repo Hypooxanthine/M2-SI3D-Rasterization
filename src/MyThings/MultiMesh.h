@@ -7,6 +7,8 @@
 
 #include "Vertex.h"
 
+#include "VertexArray.h"
+
 // Commande pour 1 mesh
 struct DrawElementsIndirectCommand
 {
