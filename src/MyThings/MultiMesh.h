@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <iostream>
 
 #include "glcore.h"
 #include "mesh.h"
@@ -26,7 +27,7 @@ struct DrawElementsIndirectCommand
 class MultiMesh
 {
 public:
-    inline constexpr MultiMesh()
+    inline MultiMesh()
     {
 
     }
@@ -44,7 +45,7 @@ public:
         /* Vertex buffer */
 
         auto oldVertexCount = m_Vertices.size();
-        auto newVertexCount = oldVertexCount + mesh.vertex_buffer_size();
+        auto newVertexCount = oldVertexCount + mesh.positions().size();
         m_Vertices.resize(newVertexCount);
 
         if (mesh.has_position())
@@ -64,7 +65,7 @@ public:
         /* Index buffer / Elements buffer */
 
         auto oldIndexCount = m_Indices.size();
-        auto newIndexCount = oldIndexCount + mesh.index_count();
+        auto newIndexCount = oldIndexCount + mesh.indices().size();
         m_Indices.resize(newIndexCount);
 
         for (size_t i = oldIndexCount; i < newIndexCount; ++i)
@@ -75,7 +76,11 @@ public:
 
         /* Values for instacesCount and baseInstance */
         command.instanceCount = instanceCount;
-        command.baseInstance = 0;
+
+        if (getMeshCount() == 1)
+            command.baseInstance = 0;
+        else
+            command.baseInstance = m_IndirectCommands[getMeshCount() - 1].baseInstance + m_IndirectCommands[getMeshCount() - 1].instanceCount;
 
         /* A mesh was added, we need to update buffers */
         m_NeedsUpdateMesh = true;
@@ -92,6 +97,7 @@ public:
     inline void draw(GLenum mode = GL_TRIANGLES) const
     {
         glBindVertexArray(m_VAO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
         glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_DrawIndirectBO);
 
         glMultiDrawElementsIndirect(
@@ -132,12 +138,27 @@ public:
         m_NeedsUpdateCommand = true;
     }
 
-    inline constexpr size_t getMeshCount() const { return m_IndirectCommands.size(); }
+    inline size_t getMeshCount() const { return m_IndirectCommands.size(); }
     inline constexpr GLuint getVao() const { return m_VAO; }
     inline constexpr GLuint getVbo() const { return m_VBO; }
     inline constexpr GLuint getEbo() const { return m_EBO; }
-    inline constexpr GLuint getMeshInstanceCount(size_t meshIndex) const { return m_IndirectCommands.at(meshIndex).instanceCount; }
-    inline constexpr void setMeshInstanceCount(size_t meshindex, size_t instanceCount) { m_IndirectCommands.at(meshindex).instanceCount = instanceCount; }
+    inline GLuint getMeshInstanceCount(size_t meshIndex) const { return m_IndirectCommands.at(meshIndex).instanceCount; }
+    inline void setMeshInstanceCount(size_t meshIndex, size_t instanceCount)
+    {
+        m_IndirectCommands.at(meshIndex).instanceCount = instanceCount;
+
+        for (size_t i = meshIndex + 1; i < m_IndirectCommands.size(); ++i)
+        {
+            auto& command = m_IndirectCommands.at(i);
+
+            if (i == 0)
+                command.baseInstance = 0;
+            else
+                command.baseInstance = m_IndirectCommands.at(i - 1).baseInstance + m_IndirectCommands.at(i - 1).instanceCount;
+        }
+
+        m_NeedsUpdateCommand = true;
+    }
 
     inline void updateBuffers()
     {
@@ -232,4 +253,9 @@ private:
     bool m_NeedsUpdateCommand = true;
 
     GLuint m_VBO = 0, m_EBO = 0, m_VAO = 0, m_DrawIndirectBO = 0;
+
+    VertexArray m_CubesVao;
+    StaticVertexBuffer m_CubesVbo;
+    StaticIndexBuffer m_CubesIbo;
+    DynamicVertexBuffer m_InstanceModelsVbo;
 };

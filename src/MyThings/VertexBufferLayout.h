@@ -16,7 +16,7 @@ public:
     };
 
 public:
-    inline constexpr VertexBufferLayout()
+    inline VertexBufferLayout()
     {
 
     }
@@ -26,12 +26,12 @@ public:
 
     }
 
-    inline constexpr void pushEmptyBytes(GLuint count)
+    inline void pushEmptyBytes(GLuint count)
     {
         m_Stride += count;
     }
 
-    inline constexpr void pushFloats(GLuint count, bool normalized = false)
+    inline void pushFloats(GLuint count, bool normalized = false)
     {
         auto& element = m_Elements.emplace_back();
         element.count = count;
@@ -42,7 +42,7 @@ public:
         m_Stride += sizeof(GLfloat) * count;
     }
 
-    inline constexpr void pushInts(GLuint count, bool normalized = false)
+    inline void pushInts(GLuint count, bool normalized = false)
     {
         auto& element = m_Elements.emplace_back();
         element.count = count;
@@ -53,7 +53,7 @@ public:
         m_Stride += sizeof(GLint) * count;
     }
 
-    inline constexpr void pushUnsignedInts(GLuint count, bool normalized = false)
+    inline void pushUnsignedInts(GLuint count, bool normalized = false)
     {
         auto& element = m_Elements.emplace_back();
         element.count = count;
@@ -64,7 +64,7 @@ public:
         m_Stride += sizeof(GLuint) * count;
     }
 
-    inline constexpr void pushUnsignedBytes(GLuint count, bool normalized = false)
+    inline void pushUnsignedBytes(GLuint count, bool normalized = false)
     {
         auto& element = m_Elements.emplace_back();
         element.count = count;
@@ -75,9 +75,9 @@ public:
         m_Stride += sizeof(GLubyte) * count;
     }
 
-    inline constexpr const std::vector<Element>& getElements() const { return m_Elements; }
+    inline const std::vector<Element>& getElements() const { return m_Elements; }
 
-    inline constexpr GLuint getStride() const { return m_Stride; }
+    inline GLuint getStride() const { return m_Stride; }
     
 private:
     GLuint m_Stride = 0;

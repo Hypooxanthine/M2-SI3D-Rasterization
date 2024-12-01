@@ -12,9 +12,9 @@ uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
 
 // Per instance data
-layout(std140) uniform instanceData
+layout(std430, binding = 0) buffer TransformBlock
 {
-    mat4 modelMatrix[1];
+    mat4 modelMatrix[];
 };
 
 out vec3 v_position;

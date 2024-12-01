@@ -270,8 +270,6 @@ project("TP_SI3D")
     files { gkit_dir,
             "TP_SI3D/src/TP_SI3D.cpp",
             "TP_SI3D/src/Terrain.cpp",
-            "TP_SI3D/src/Cube.cpp",
-            "TP_SI3D/src/CubeBash.cpp",
     }
     includedirs { gkit_dir .. "/TP_SI3D/include" , gkit_dir .. "/src/MyThings" }
 

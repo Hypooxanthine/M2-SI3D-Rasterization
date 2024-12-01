@@ -7,9 +7,11 @@
 
 #include <vector>
 
-#include "CubeBash.h"
+#include "mat.h"
 #include "Texture2D.h"
 #include "Shader.h"
+#include "MultiMesh.h"
+#include "ShaderStorageBufferObject.h"
 
 class Terrain
 {
@@ -18,7 +20,7 @@ public:
     {
         int cubesWidth = 50;
         int cubesHeight = 20;
-        float cubeSize = .01f;
+        float cubeSize = .1f;
     };
 public:
     Terrain(const TerrainSpecs& specs);
@@ -38,7 +40,10 @@ private:
 
     Texture2D m_SpriteSheetTexture;
 
-    CubeBash m_GrassBash;
-
     Shader m_CubeShader;
+
+    std::vector<Mesh> m_Meshes;
+    MultiMesh m_MultiMesh;
+    std::vector<Transform> m_InstanceTransforms;
+    ShaderStorageBufferObject m_SSBO;
 };
