@@ -37,8 +37,10 @@ void Terrain::loadData()
         m_MultiMesh.addMesh(mesh);
     
     auto instanceCount = m_Specs.cubesWidth * m_Specs.cubesWidth;
-    m_MultiMesh.setMeshInstanceCount(0, instanceCount / 2);
-    m_MultiMesh.setMeshInstanceCount(1, instanceCount - instanceCount / 2);
+    m_MultiMesh.addCommand(0, instanceCount / 2, 0);
+    m_MultiMesh.addCommand(1, instanceCount - instanceCount / 2, instanceCount / 2);
+    // m_MultiMesh.setMeshInstanceCount(0, instanceCount / 2);
+    // m_MultiMesh.setMeshInstanceCount(1, instanceCount - instanceCount / 2);
     m_MultiMesh.createBuffers();
 }
 

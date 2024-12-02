@@ -14,7 +14,7 @@
 // Commande pour 1 mesh
 struct DrawElementsIndirectCommand
 {
-    GLuint count;
+    GLuint indexCount;
     GLuint instanceCount;
     GLuint firstIndex;
     GLint  baseVertex;
@@ -39,9 +39,16 @@ public:
     }
 
     // Ne va pas créer les buffers via Mesh::create_buffers(). Ils seront recréés par la classe MultiMesh.
-    inline void addMesh(const Mesh& mesh, GLuint instanceCount = 0)
+    // Retourne l'id du mesh ajouté.
+    inline size_t addMesh(const Mesh& mesh, GLuint instanceCount = 0)
     {
-        auto& command = m_IndirectCommands.emplace_back();
+        /* Tracking the mesh we are going to add */
+
+        auto& tracker = m_MeshTrackers.emplace_back();
+        tracker.firstVertex = m_Vertices.size();
+        tracker.vertexCount = mesh.positions().size();
+        tracker.firstIndex = m_Indices.size();
+        tracker.indexCount = mesh.indices().size();
 
         /* Vertex buffer */
 
@@ -60,8 +67,6 @@ public:
         if (mesh.has_normal())
             for (size_t i = oldVertexCount; i < newVertexCount; ++i)
                 m_Vertices.at(i).normal = mesh.normals().at(i - oldVertexCount);
-                
-        command.baseVertex = oldVertexCount;
         
         /* Index buffer / Elements buffer */
 
@@ -72,20 +77,11 @@ public:
         for (size_t i = oldIndexCount; i < newIndexCount; ++i)
             m_Indices.at(i) = mesh.indices().at(i - oldIndexCount);
 
-        command.count = newIndexCount - oldIndexCount;
-        command.firstIndex = oldIndexCount;
-
-        /* Values for instacesCount and baseInstance */
-        command.instanceCount = instanceCount;
-
-        if (getMeshCount() == 1)
-            command.baseInstance = 0;
-        else
-            command.baseInstance = m_IndirectCommands[getMeshCount() - 1].baseInstance + m_IndirectCommands[getMeshCount() - 1].instanceCount;
-
         /* A mesh was added, we need to update buffers */
         m_NeedsUpdateMesh = true;
         m_NeedsUpdateCommand = true;
+
+        return m_MeshTrackers.size() - 1;
     }
 
     inline const VertexArray& createBuffers()
@@ -134,26 +130,35 @@ public:
         m_NeedsUpdateCommand = true;
     }
 
-    inline size_t getMeshCount() const { return m_IndirectCommands.size(); }
+    inline size_t getMeshCount() const { return m_MeshTrackers.size(); }
     inline constexpr const VertexArray& getVao() const { return m_VAO; }
     inline constexpr const StaticVertexBuffer& getVbo() const { return m_VBO; }
     inline constexpr const StaticIndexBuffer& getEbo() const { return m_EBO; }
-    inline GLuint getMeshInstanceCount(size_t meshIndex) const { return m_IndirectCommands.at(meshIndex).instanceCount; }
-    inline void setMeshInstanceCount(size_t meshIndex, size_t instanceCount)
+    
+    inline size_t addCommand(size_t meshIndex, GLuint instanceCount, GLuint baseInstance)
     {
-        m_IndirectCommands.at(meshIndex).instanceCount = instanceCount;
+        const auto& tracker = m_MeshTrackers.at(meshIndex);
+        auto& command = m_IndirectCommands.emplace_back();
 
-        for (size_t i = meshIndex + 1; i < m_IndirectCommands.size(); ++i)
-        {
-            auto& command = m_IndirectCommands.at(i);
+        command.indexCount = tracker.indexCount;
+        command.instanceCount = instanceCount;
+        command.firstIndex = tracker.firstIndex;
+        command.baseVertex = tracker.firstVertex;
+        command.baseInstance = baseInstance;
 
-            if (i == 0)
-                command.baseInstance = 0;
-            else
-                command.baseInstance = m_IndirectCommands.at(i - 1).baseInstance + m_IndirectCommands.at(i - 1).instanceCount;
-        }
+        return m_IndirectCommands.size() - 1;
+    }
 
-        m_NeedsUpdateCommand = true;
+    inline void setCommand(size_t commandIndex, size_t meshIndex, GLuint instanceCount, GLuint baseInstance)
+    {
+        const auto& tracker = m_MeshTrackers.at(meshIndex);
+        auto& command = m_IndirectCommands.at(commandIndex);
+
+        command.indexCount = tracker.indexCount;
+        command.instanceCount = instanceCount;
+        command.firstIndex = tracker.firstIndex;
+        command.baseVertex = tracker.firstVertex;
+        command.baseInstance = baseInstance;
     }
 
     inline void updateBuffers()
@@ -197,8 +202,16 @@ public:
     }
 
 private:
+    struct MeshTracker
+    {
+        size_t firstVertex, vertexCount;
+        size_t firstIndex, indexCount;
+    };
+
+private:
     std::vector<Vertex> m_Vertices;
     std::vector<GLuint> m_Indices;
+    std::vector<MeshTracker> m_MeshTrackers;
     std::vector<DrawElementsIndirectCommand> m_IndirectCommands;
     bool m_NeedsUpdateMesh = true; // Même si on n'a ajouté aucun mesh au départ, on peut toujours créer des buffers vides...
     bool m_NeedsUpdateCommand = true;
