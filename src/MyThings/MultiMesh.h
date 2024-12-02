@@ -137,16 +137,12 @@ public:
     
     inline size_t addCommand(size_t meshIndex, GLuint instanceCount, GLuint baseInstance)
     {
-        const auto& tracker = m_MeshTrackers.at(meshIndex);
+        size_t id = m_IndirectCommands.size();
         auto& command = m_IndirectCommands.emplace_back();
+        
+        setCommand(id, meshIndex, instanceCount, baseInstance);
 
-        command.indexCount = tracker.indexCount;
-        command.instanceCount = instanceCount;
-        command.firstIndex = tracker.firstIndex;
-        command.baseVertex = tracker.firstVertex;
-        command.baseInstance = baseInstance;
-
-        return m_IndirectCommands.size() - 1;
+        return id;
     }
 
     inline void setCommand(size_t commandIndex, size_t meshIndex, GLuint instanceCount, GLuint baseInstance)
@@ -159,6 +155,8 @@ public:
         command.firstIndex = tracker.firstIndex;
         command.baseVertex = tracker.firstVertex;
         command.baseInstance = baseInstance;
+
+        m_NeedsUpdateCommand = true;
     }
 
     inline void updateBuffers()

@@ -7,7 +7,7 @@ Terrain::Terrain(const TerrainSpecs& specs)
     : m_Specs(specs)
 {
     loadData();
-    initCubeTransforms();
+    initChunks();
 }
 
 Terrain::Terrain()
@@ -35,51 +35,43 @@ void Terrain::loadData()
     
     for (const auto& mesh : m_Meshes)
         m_MultiMesh.addMesh(mesh);
-    
-    auto instanceCount = m_Specs.cubesWidth * m_Specs.cubesWidth;
-    m_MultiMesh.addCommand(0, instanceCount / 2, 0);
-    m_MultiMesh.addCommand(1, instanceCount - instanceCount / 2, instanceCount / 2);
-    // m_MultiMesh.setMeshInstanceCount(0, instanceCount / 2);
-    // m_MultiMesh.setMeshInstanceCount(1, instanceCount - instanceCount / 2);
+
     m_MultiMesh.createBuffers();
 }
 
-void Terrain::initCubeTransforms()
+void Terrain::initChunks()
 {
     constexpr float CUBE_INITIAL_SIZE = 2.f;
-    m_InstanceTransforms.reserve(m_Specs.cubesWidth * m_Specs.cubesWidth);
 
-    for (int i = 0; i < m_Specs.cubesWidth; i++)
-    {
-        for (int j = 0; j < m_Specs.cubesWidth; j++)
-        {
-            const float normalizedX = static_cast<float>(i) / m_Specs.cubesWidth;
-            const float normalizedZ = static_cast<float>(j) / m_Specs.cubesWidth;
-            const float normalizedY = m_HeightMap.texture(normalizedX, normalizedZ).r;
-
-            const float X = (static_cast<float>(i)) * m_Specs.cubeSize * CUBE_INITIAL_SIZE;
-            const float Y = std::floor(normalizedY * static_cast<float>(m_Specs.cubesHeight)) * m_Specs.cubeSize * CUBE_INITIAL_SIZE;
-            const float Z = (static_cast<float>(j)) * m_Specs.cubeSize * CUBE_INITIAL_SIZE;
-
-            m_InstanceTransforms.emplace_back(Transpose(Translation(X, Y, Z) * Scale(m_Specs.cubeSize)));
-        }
-    }
+    m_ChunkManager.init(m_Specs.chunkX, m_Specs.chunkY, m_Specs.chunkWidth, m_HeightMap, m_Specs.cubesHeight, CUBE_INITIAL_SIZE, m_Specs.cubeSize);
 
     m_SSBO.generate();
     m_SSBO.setBindingPoint(0);
-    m_SSBO.setData(m_InstanceTransforms.data(), m_InstanceTransforms.size() * sizeof(Transform));
+    std::cout << "Init ssbo data size: " << m_Specs.chunkX * m_Specs.chunkY * m_Specs.chunkWidth * m_Specs.chunkWidth << " * " << sizeof(Transform)
+        << " = " << m_Specs.chunkX * m_Specs.chunkY * m_Specs.chunkWidth * m_Specs.chunkWidth * sizeof(Transform) << "B \n";
+    m_SSBO.setData(nullptr, m_Specs.chunkX * m_Specs.chunkY * m_Specs.chunkWidth * m_Specs.chunkWidth * sizeof(Transform));
+
+    for (size_t i = 0; i < m_ChunkManager.getChunks().size(); ++i)
+    {
+        auto& chunk = m_ChunkManager.getChunks().at(i);
+        auto offset = m_ChunkManager.getChunkFirstInstanceIndice().at(i);
+        m_SSBO.setSubData(chunk.getInstanceTransforms().data(), chunk.getInstanceTransforms().size() * sizeof(Transform), offset * sizeof(Transform));
+
+        // std::cout << "SSBO subdata, offset: " << offset << ", data size: " << chunk.getInstanceTransforms().size() << "\n";
+
+        // Just for testing for now
+        // Hiding chunks by setting its instance count to zero reduces gpu time
+        // Hiding half of chunks really divides gpu time per 2.
+        // So I am going for this strategy.
+        size_t meshIndex = std::rand() % 2;
+        bool hideChunk = (std::rand() % 2 == 0 ? true : false);
+        m_MultiMesh.addCommand(std::rand() % 2, hideChunk ? 0 : chunk.getInstanceCount(), offset);
+    }
+    m_MultiMesh.updateCommandsBuffer();
 }
 
 void Terrain::draw(const Transform& view, const Transform& projection) const
 {
-    // m_CubeShader.bind();
-
-    // m_CubeShader.setTextureUniform(m_SpriteSheetTexture, 0, "spriteSheet");
-
-    // m_CubeShader.setUniform("projectionMatrix", projection);
-    // m_CubeShader.setUniform("viewMatrix", view);
-
-    // m_GrassBash.draw();
     m_CubeShader.bind();
     m_CubeShader.setUniform("viewMatrix", view);
     m_CubeShader.setUniform("projectionMatrix", projection);

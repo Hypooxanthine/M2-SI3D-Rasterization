@@ -12,15 +12,18 @@
 #include "Shader.h"
 #include "MultiMesh.h"
 #include "ShaderStorageBufferObject.h"
+#include "ChunkManager.h"
 
 class Terrain
 {
 public:
     struct TerrainSpecs
     {
-        int cubesWidth = 200;
-        int cubesHeight = 50;
-        float cubeSize = .01f;
+        size_t chunkX = 10;
+        size_t chunkY = 10;
+        size_t chunkWidth = 16;
+        size_t cubesHeight = 40;
+        float cubeSize = .1f;
     };
 public:
     Terrain(const TerrainSpecs& specs);
@@ -31,7 +34,7 @@ public:
 
 private:
     void loadData();
-    void initCubeTransforms();
+    void initChunks();
 
 private:
     TerrainSpecs m_Specs;
@@ -43,6 +46,7 @@ private:
     Shader m_CubeShader;
 
     std::vector<Mesh> m_Meshes;
+    ChunkManager m_ChunkManager;
     MultiMesh m_MultiMesh;
     std::vector<Transform> m_InstanceTransforms;
     ShaderStorageBufferObject m_SSBO;
