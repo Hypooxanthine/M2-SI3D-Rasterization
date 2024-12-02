@@ -3,16 +3,16 @@
 
 #include "orbiter.h"
 #include "draw.h"        
-#include "app_camera.h"
+#include "app_time.h"
 
 #include "Terrain.h"
 
 
-class TP : public AppCamera
+class TP : public AppTime
 {
 public:
     // constructeur : donner les dimensions de l'image, et eventuellement la version d'openGL.
-    TP( ) : AppCamera(1024, 640), m_Terrain() {}
+    TP( ) : AppTime(1024, 640), m_Terrain() {}
     
     // creation des objets de l'application
     int init( ) override
@@ -35,14 +35,35 @@ public:
     // dessiner une nouvelle image
     int render( ) override
     {
+        // recupere l'etat de la souris
+        int mx, my;
+        unsigned int mb= SDL_GetRelativeMouseState(&mx, &my);
+        
+        // deplace la camera
+        if(mb & SDL_BUTTON(1))
+            m_camera.rotation(mx, my);      // tourne autour de l'objet
+        else if(mb & SDL_BUTTON(3))
+            m_camera.translation((float) mx / (float) window_width(), (float) my / (float) window_height()); // deplace le point de rotation
+        else if(mb & SDL_BUTTON(2))
+            m_camera.move(mx);           // approche / eloigne l'objet
+        
+        // recupere l'etat de la molette / touch
+        SDL_MouseWheelEvent wheel= wheel_event();
+        if(wheel.y != 0)
+        {
+            clear_wheel_event();
+            m_camera.move(8.f * wheel.y);  // approche / eloigne l'objet
+        }
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
-        m_Terrain.draw(camera().view(), camera().projection());
+        m_Terrain.draw(m_camera.view(), m_camera.projection());
         
         return 1;
     }
 
 protected:
+    Orbiter m_camera;
     Terrain m_Terrain;
 };
 
