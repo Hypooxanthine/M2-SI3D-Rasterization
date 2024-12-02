@@ -40,14 +40,11 @@ public:
 
         glGenBuffers(1, &m_RenderID);
         bind();
-        glBufferData(TARGET, dataSize, data, GL_STATIC_DRAW);
+        glBufferData(TARGET, dataSize, data, USAGE);
     }
 
     inline static void bind(GLuint renderId)
     {
-        if (renderId == s_CurrentRenderID)
-            return;
-
         glBindBuffer(TARGET, renderId);
         s_CurrentRenderID = renderId;
     }

@@ -36,9 +36,9 @@ public:
         releaseGpuMemory();
     }
 
-    inline void generate(const VertexBufferLayout& layout)
+    inline void generate()
     {
-        releaseGpuMemory();
+        release();
         glGenVertexArrays(1, &m_RenderID);
     }
 

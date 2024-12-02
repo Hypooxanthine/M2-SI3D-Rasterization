@@ -9,6 +9,7 @@
 #include "Vertex.h"
 
 #include "VertexArray.h"
+#include "DrawIndirectBO.h"
 
 // Commande pour 1 mesh
 struct DrawElementsIndirectCommand
@@ -97,8 +98,8 @@ public:
     inline void draw(GLenum mode = GL_TRIANGLES) const
     {
         glBindVertexArray(m_VAO);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
-        glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_DrawIndirectBO);
+        m_EBO.bind();
+        m_DrawIndirectBO.bind();
 
         glMultiDrawElementsIndirect(
             mode,
@@ -121,27 +122,24 @@ public:
     inline void releaseMeshBuffers()
     {
         if (m_VAO != 0) glDeleteVertexArrays(1, &m_VAO);
-        if (m_VBO != 0) glDeleteBuffers(1, &m_VBO);
-        if (m_EBO != 0) glDeleteBuffers(1, &m_EBO);
+        m_VBO.release();
+        m_EBO.release();
 
         m_VAO = 0;
-        m_VBO = 0;
-        m_EBO = 0;
 
         m_NeedsUpdateMesh = true;
     }
 
     inline void releaseCommandsBuffer()
     {
-        if (m_DrawIndirectBO != 0) glDeleteBuffers(1, &m_DrawIndirectBO);
-        m_DrawIndirectBO = 0;
+        m_DrawIndirectBO.release();
         m_NeedsUpdateCommand = true;
     }
 
     inline size_t getMeshCount() const { return m_IndirectCommands.size(); }
     inline constexpr GLuint getVao() const { return m_VAO; }
-    inline constexpr GLuint getVbo() const { return m_VBO; }
-    inline constexpr GLuint getEbo() const { return m_EBO; }
+    inline constexpr const StaticVertexBuffer& getVbo() const { return m_VBO; }
+    inline constexpr const StaticIndexBuffer& getEbo() const { return m_EBO; }
     inline GLuint getMeshInstanceCount(size_t meshIndex) const { return m_IndirectCommands.at(meshIndex).instanceCount; }
     inline void setMeshInstanceCount(size_t meshIndex, size_t instanceCount)
     {
@@ -166,27 +164,13 @@ public:
         releaseMeshBuffers();
 
         // Création des buffers
-        glGenBuffers(1, &m_VBO);
-        glGenBuffers(1, &m_EBO);
         glGenVertexArrays(1, &m_VAO);
 
         // Contenu du vertex buffer (VBO)
-        glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
-        glBufferData(
-            GL_ARRAY_BUFFER,
-            m_Vertices.size() * sizeof(decltype(m_Vertices)::value_type),
-            m_Vertices.data(),
-            GL_STATIC_DRAW
-        );
+        m_VBO.generateVertices(m_Vertices.data(), m_Vertices.size());
 
         // Contenu de l'index buffer/element buffer (IBO/EBO)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
-        glBufferData(
-            GL_ELEMENT_ARRAY_BUFFER,
-            m_Indices.size() * sizeof(decltype(m_Indices)::value_type),
-            m_Indices.data(),
-            GL_STATIC_DRAW
-        );
+        m_EBO.generateIndices(m_Indices.data(), m_Indices.size());
 
         // Paramétrage du vertex array (VAO)
         glBindVertexArray(m_VAO);
@@ -231,15 +215,8 @@ public:
     {
         // Nettoyage (pourrait peut-être amélioré en faisant du subdata, mais ça ferait potentiellement beaucoup d'aller-retours cpu/gpu)
         releaseCommandsBuffer();
-
-        glGenBuffers(1, &m_DrawIndirectBO);
-        glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_DrawIndirectBO);
-        glBufferData(
-            GL_DRAW_INDIRECT_BUFFER,
-            m_IndirectCommands.size() * sizeof(decltype(m_IndirectCommands)::value_type),
-            m_IndirectCommands.data(),
-            GL_DYNAMIC_DRAW // Sera souvent mis à jour
-        );
+        
+        m_DrawIndirectBO.generateCommands(m_IndirectCommands.data(), m_IndirectCommands.size());
 
         // C'est terminé
         m_NeedsUpdateCommand = true;
@@ -252,10 +229,10 @@ private:
     bool m_NeedsUpdateMesh = true; // Même si on n'a ajouté aucun mesh au départ, on peut toujours créer des buffers vides...
     bool m_NeedsUpdateCommand = true;
 
-    GLuint m_VBO = 0, m_EBO = 0, m_VAO = 0, m_DrawIndirectBO = 0;
+    GLuint m_VAO = 0;
 
     VertexArray m_CubesVao;
-    StaticVertexBuffer m_CubesVbo;
-    StaticIndexBuffer m_CubesIbo;
-    DynamicVertexBuffer m_InstanceModelsVbo;
+    StaticVertexBuffer m_VBO;
+    StaticIndexBuffer m_EBO;
+    DynamicDrawIndirectBO m_DrawIndirectBO;
 };
