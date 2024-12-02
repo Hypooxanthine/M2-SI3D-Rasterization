@@ -88,7 +88,7 @@ public:
         m_NeedsUpdateCommand = true;
     }
 
-    inline GLuint createBuffers()
+    inline const VertexArray& createBuffers()
     {
         if (m_NeedsUpdateMesh) updateBuffers();
 
@@ -97,7 +97,7 @@ public:
 
     inline void draw(GLenum mode = GL_TRIANGLES) const
     {
-        glBindVertexArray(m_VAO);
+        m_VAO.bind();
         m_EBO.bind();
         m_DrawIndirectBO.bind();
 
@@ -121,11 +121,9 @@ public:
 
     inline void releaseMeshBuffers()
     {
-        if (m_VAO != 0) glDeleteVertexArrays(1, &m_VAO);
+        m_VAO.release();
         m_VBO.release();
         m_EBO.release();
-
-        m_VAO = 0;
 
         m_NeedsUpdateMesh = true;
     }
@@ -137,7 +135,7 @@ public:
     }
 
     inline size_t getMeshCount() const { return m_IndirectCommands.size(); }
-    inline constexpr GLuint getVao() const { return m_VAO; }
+    inline constexpr const VertexArray& getVao() const { return m_VAO; }
     inline constexpr const StaticVertexBuffer& getVbo() const { return m_VBO; }
     inline constexpr const StaticIndexBuffer& getEbo() const { return m_EBO; }
     inline GLuint getMeshInstanceCount(size_t meshIndex) const { return m_IndirectCommands.at(meshIndex).instanceCount; }
@@ -163,9 +161,6 @@ public:
         // Nettoyage des buffers s'ils ont déjà été créés
         releaseMeshBuffers();
 
-        // Création des buffers
-        glGenVertexArrays(1, &m_VAO);
-
         // Contenu du vertex buffer (VBO)
         m_VBO.generateVertices(m_Vertices.data(), m_Vertices.size());
 
@@ -173,37 +168,16 @@ public:
         m_EBO.generateIndices(m_Indices.data(), m_Indices.size());
 
         // Paramétrage du vertex array (VAO)
-        glBindVertexArray(m_VAO);
+        VertexBufferLayout layout;
         // Positions
-            glEnableVertexAttribArray(0);
-            glVertexAttribPointer(
-                0, // Index de l'attribut
-                3, // Position en 3 dimensions
-                GL_FLOAT, // Type de l'élément position sur le gpu
-                GL_FALSE, // Non normalisé
-                sizeof(Vertex), // Nombre d'octets entre le début de deux attributs consécutifs dans le VBO
-                (void*)offsetof(Vertex, position) // Position du premier élément dans le VBO
-            );
+        layout.pushFloats(3);
         // Coordonnées de texture
-            glEnableVertexAttribArray(1);
-            glVertexAttribPointer(
-                1,
-                2,
-                GL_FLOAT,
-                GL_FALSE,
-                sizeof(Vertex),
-                (void*)offsetof(Vertex, texcoords)
-            );
+        layout.pushFloats(2);
         // Normales
-            glEnableVertexAttribArray(2);
-            glVertexAttribPointer(
-                2,
-                3,
-                GL_FLOAT,
-                GL_FALSE,
-                sizeof(Vertex),
-                (void*)offsetof(Vertex, normal)
-            );
+        layout.pushFloats(3);
+        
+        m_VAO.generate();
+        m_VAO.addLayout(m_VBO, layout);
 
         // C'est terminé
         m_NeedsUpdateMesh = false;
@@ -229,9 +203,9 @@ private:
     bool m_NeedsUpdateMesh = true; // Même si on n'a ajouté aucun mesh au départ, on peut toujours créer des buffers vides...
     bool m_NeedsUpdateCommand = true;
 
-    GLuint m_VAO = 0;
+    // GLuint m_VAO = 0;
 
-    VertexArray m_CubesVao;
+    VertexArray m_VAO;
     StaticVertexBuffer m_VBO;
     StaticIndexBuffer m_EBO;
     DynamicDrawIndirectBO m_DrawIndirectBO;

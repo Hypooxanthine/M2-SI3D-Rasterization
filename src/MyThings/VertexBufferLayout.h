@@ -37,7 +37,7 @@ public:
         element.count = count;
         element.type = GL_FLOAT;
         element.normalized = normalized ? GL_TRUE : GL_FALSE;
-        element.offset = reinterpret_cast<const void*>(count);
+        element.offset = reinterpret_cast<const void*>(m_Stride);
 
         m_Stride += sizeof(GLfloat) * count;
     }
@@ -48,7 +48,7 @@ public:
         element.count = count;
         element.type = GL_INT;
         element.normalized = normalized ? GL_TRUE : GL_FALSE;
-        element.offset = reinterpret_cast<const void*>(count);
+        element.offset = reinterpret_cast<const void*>(m_Stride);
 
         m_Stride += sizeof(GLint) * count;
     }
@@ -59,7 +59,7 @@ public:
         element.count = count;
         element.type = GL_UNSIGNED_INT;
         element.normalized = normalized ? GL_TRUE : GL_FALSE;
-        element.offset = reinterpret_cast<const void*>(count);
+        element.offset = reinterpret_cast<const void*>(m_Stride);
 
         m_Stride += sizeof(GLuint) * count;
     }

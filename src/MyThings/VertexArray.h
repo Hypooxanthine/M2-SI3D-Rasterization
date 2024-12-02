@@ -87,8 +87,8 @@ public:
 
     inline static void bind(GLuint renderId)
     {
-        if (renderId == s_CurrentRenderID)
-            return;
+        // if (renderId == s_CurrentRenderID)
+        //     return;
 
         glBindVertexArray(renderId);
         s_CurrentRenderID = renderId;

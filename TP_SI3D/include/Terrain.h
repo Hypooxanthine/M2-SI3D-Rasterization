@@ -19,7 +19,7 @@ public:
     struct TerrainSpecs
     {
         int cubesWidth = 400;
-        int cubesHeight = 20;
+        int cubesHeight = 50;
         float cubeSize = .01f;
     };
 public:
