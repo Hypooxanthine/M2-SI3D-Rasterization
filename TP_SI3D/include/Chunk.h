@@ -4,6 +4,7 @@
 
 #include "mat.h"
 #include "image.h"
+#include "FrustumCulling.h"
 
 class Chunk
 {
@@ -38,12 +39,18 @@ public:
                 // std::cout << "Instance " << i << ", " << j << " created\n";
             }
         }
+
+        m_BoundingBox.first = { startX * cubeDesiredSize, 0.f, startY * cubeDesiredSize };
+        m_BoundingBox.size = { chunkWidth * cubeDesiredSize, maxHeight * cubeDesiredSize, chunkWidth * cubeDesiredSize };
     }
 
     inline const auto& getInstanceTransforms() const { return m_InstanceTransforms; }
 
     inline size_t getInstanceCount() const { return m_InstanceTransforms.size(); }
 
+    inline const AABB& getboundingBox() const { return m_BoundingBox; }
+
 private:
     std::vector<Transform> m_InstanceTransforms;
+    AABB m_BoundingBox;
 };

@@ -3,6 +3,8 @@
 #include <wavefront.h>
 #include <image_io.h>
 
+#define LOG_SHOWN_CHUNKS 1
+
 Terrain::Terrain(const TerrainSpecs& specs)
     : m_Specs(specs)
 {
@@ -59,8 +61,7 @@ void Terrain::initChunks()
 
         // std::cout << "SSBO subdata, offset: " << offset << ", data size: " << chunk.getInstanceTransforms().size() << "\n";
 
-        size_t meshIndex = std::rand() % 2;
-        m_MultiMesh.addCommand(std::rand() % 2, chunk.getInstanceCount(), offset);
+        m_MultiMesh.addCommand(0, chunk.getInstanceCount(), offset);
     }
     m_MultiMesh.updateCommandsBuffer();
 }
@@ -73,4 +74,62 @@ void Terrain::draw(const Transform& view, const Transform& projection) const
     m_CubeShader.setTextureUniform(m_SpriteSheetTexture, 0, "spriteSheet");
 
     m_MultiMesh.draw();
+}
+
+void Terrain::cullChunks(const Transform& view, const Transform& projection)
+{
+    const Transform viewProj = projection * view;
+    const Transform viewProjInv = viewProj.inverse();
+
+    #if LOG_SHOWN_CHUNKS
+    size_t shownChunks = 0;
+    #endif
+
+    for (size_t i = 0; i < m_ChunkManager.getChunks().size(); ++i)
+    {
+        const auto& chunk = m_ChunkManager.getChunks().at(i);
+        auto offset = m_ChunkManager.getChunkFirstInstanceIndice().at(i);
+
+        if (AabbCrossesViewVolume(chunk.getboundingBox(), viewProj, viewProjInv))
+        {
+            m_MultiMesh.setCommand(i, 0, chunk.getInstanceCount(), offset);
+            #if LOG_SHOWN_CHUNKS
+            ++shownChunks;
+            #endif
+        }
+        else
+        {
+            m_MultiMesh.setCommand(i, 0, 0, offset);
+        }
+    }
+
+    m_MultiMesh.updateCommandsBuffer();
+
+    #if LOG_SHOWN_CHUNKS
+    std::cout << "Drawing " << shownChunks << "/" << m_ChunkManager.getChunks().size() << " chunks\n";
+    #endif
+}
+
+void Terrain::stopCulling()
+{
+    #if LOG_SHOWN_CHUNKS
+    size_t shownChunks = 0;
+    #endif
+
+    for (size_t i = 0; i < m_ChunkManager.getChunks().size(); ++i)
+    {
+        const auto& chunk = m_ChunkManager.getChunks().at(i);
+        auto offset = m_ChunkManager.getChunkFirstInstanceIndice().at(i);
+
+        m_MultiMesh.setCommand(i, 0, chunk.getInstanceCount(), offset);
+        #if LOG_SHOWN_CHUNKS
+        ++shownChunks;
+        #endif
+    }
+
+    m_MultiMesh.updateCommandsBuffer();
+
+    #if LOG_SHOWN_CHUNKS
+    std::cout << "Drawing " << shownChunks << "/" << m_ChunkManager.getChunks().size() << " chunks\n";
+    #endif
 }

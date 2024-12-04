@@ -19,8 +19,8 @@ class Terrain
 public:
     struct TerrainSpecs
     {
-        size_t chunkX = 10;
-        size_t chunkY = 10;
+        size_t chunkX = 50;
+        size_t chunkY = 50;
         size_t chunkWidth = 16;
         size_t cubesHeight = 40;
         float cubeSize = .1f;
@@ -31,6 +31,8 @@ public:
     ~Terrain();
 
     void draw(const Transform& view, const Transform& projection) const;
+    void cullChunks(const Transform& view, const Transform& projection);
+    void stopCulling();
 
 private:
     void loadData();

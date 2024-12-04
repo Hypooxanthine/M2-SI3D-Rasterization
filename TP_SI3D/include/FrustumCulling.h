@@ -27,22 +27,13 @@ inline const AABB NDC_CUBE = {
 
 struct Octogon
 {
-    inline constexpr Octogon()
-        : points(std::array<Point, 8>{Point{}})
-    {}
+    inline Octogon() = default;
 
     inline constexpr Octogon(const Octogon& other)
         : points(other.points)
     {}
 
-    union
-    {
-        std::array<Point, 8> points;
-        struct
-        {
-            Point A, B, C, D, E, F, G, H;
-        };
-    };
+    std::array<Point, 8> points;
 
     using iterator = decltype(points)::iterator;
     using const_iterator = decltype(points)::const_iterator;
@@ -67,10 +58,10 @@ inline Octogon AabbToOctogon(const AABB& aabb)
     for (uint8_t i = 0; i < 4; ++i)
         out[i] = first;
     
-    out.B.y += size.y;
-    out.C.y += size.y;
-    out.C.x += size.x;
-    out.D.x += size.x;
+    out[1].y += size.y;
+    out[2].y += size.y;
+    out[2].x += size.x;
+    out[3].x += size.x;
 
     for (uint8_t i = 4; i < 8; ++i)
     {
@@ -83,10 +74,8 @@ inline Octogon AabbToOctogon(const AABB& aabb)
 
 inline const Octogon NDC_OCTOGON = AabbToOctogon(NDC_CUBE);
 
-inline bool AabbCrossesViewVolume(const AABB& aabb_ws, const Transform& viewProj)
+inline bool AabbCrossesViewVolume(const AABB& aabb_ws, const Transform& viewProj, const Transform& viewProjInv)
 {
-    const Transform viewProjInv = viewProj.inverse();
-
     // Premier passage : aabb contre frustum en espace monde
 
     auto frustum_ws = NDC_OCTOGON;

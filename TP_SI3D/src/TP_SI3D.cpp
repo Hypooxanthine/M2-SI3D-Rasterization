@@ -55,6 +55,17 @@ public:
             m_camera.move(8.f * wheel.y);  // approche / eloigne l'objet
         }
 
+        if(key_state('c'))
+        {
+            clear_key_state('c');
+            m_CullChunks = !m_CullChunks;
+            if (m_CullChunks == false)
+                m_Terrain.stopCulling();
+        }
+
+        if (m_CullChunks)
+            m_Terrain.cullChunks(m_camera.view(), m_camera.projection());
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
         m_Terrain.draw(m_camera.view(), m_camera.projection());
@@ -65,6 +76,8 @@ public:
 protected:
     Orbiter m_camera;
     Terrain m_Terrain;
+
+    bool m_CullChunks = true;
 };
 
 
