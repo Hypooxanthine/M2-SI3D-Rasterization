@@ -59,13 +59,8 @@ void Terrain::initChunks()
 
         // std::cout << "SSBO subdata, offset: " << offset << ", data size: " << chunk.getInstanceTransforms().size() << "\n";
 
-        // Just for testing for now
-        // Hiding chunks by setting its instance count to zero reduces gpu time
-        // Hiding half of chunks really divides gpu time per 2.
-        // So I am going for this strategy.
         size_t meshIndex = std::rand() % 2;
-        bool hideChunk = false;//(std::rand() % 2 == 0 ? true : false);
-        m_MultiMesh.addCommand(std::rand() % 2, hideChunk ? 0 : chunk.getInstanceCount(), offset);
+        m_MultiMesh.addCommand(std::rand() % 2, chunk.getInstanceCount(), offset);
     }
     m_MultiMesh.updateCommandsBuffer();
 }
