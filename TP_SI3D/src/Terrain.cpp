@@ -64,7 +64,7 @@ void Terrain::initChunks()
         // Hiding half of chunks really divides gpu time per 2.
         // So I am going for this strategy.
         size_t meshIndex = std::rand() % 2;
-        bool hideChunk = (std::rand() % 2 == 0 ? true : false);
+        bool hideChunk = false;//(std::rand() % 2 == 0 ? true : false);
         m_MultiMesh.addCommand(std::rand() % 2, hideChunk ? 0 : chunk.getInstanceCount(), offset);
     }
     m_MultiMesh.updateCommandsBuffer();
