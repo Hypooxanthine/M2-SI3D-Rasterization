@@ -116,6 +116,9 @@ inline bool AabbCrossesFrustum(const AABB& aabb, const Frustum& frustum)
 
     for (const Plane& plane : frustum.planes)
     {
+        // Si un aabb a tous ses points "à l'extérieur" d'un des plans
+        // du frustum, alors ce plan du frustum sépare l'aabb du frustum,
+        // donc l'aabb n'est pas dans le frustum
         if (plane.pointBehind(corners[0])
             && plane.pointBehind(corners[1])
             && plane.pointBehind(corners[2])
@@ -129,8 +132,9 @@ inline bool AabbCrossesFrustum(const AABB& aabb, const Frustum& frustum)
         }
     }
 
-    // Could be improved by checking also in ndc space
-    // where the frustum is an aabb and the aabb is a frustum
+    // Pourrait être amélioré. En effet, il est possible qu'aucun
+    // plan du frustum ne sépare l'aabb du frustum, mais qu'un des
+    // plans 
 
     return true;
 }
