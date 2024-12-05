@@ -41,7 +41,7 @@ public:
         }
 
         m_BoundingBox.first = { startX * cubeDesiredSize, 0.f, startY * cubeDesiredSize };
-        m_BoundingBox.size = { chunkWidth * cubeDesiredSize, maxHeight * cubeDesiredSize, chunkWidth * cubeDesiredSize };
+        m_BoundingBox.second = { (startX + chunkWidth) * cubeDesiredSize, maxHeight * cubeDesiredSize, (startY + chunkWidth) * cubeDesiredSize };
     }
 
     inline const auto& getInstanceTransforms() const { return m_InstanceTransforms; }

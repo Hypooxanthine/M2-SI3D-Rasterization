@@ -5,96 +5,132 @@
 
 #include "mat.h"
 
+struct Vec4
+{
+    float x, y, z, w;
+
+    inline constexpr Vec4(float x, float y, float z, float w)
+        : x(x), y(y), z(z), w(w)
+    {}
+
+    inline constexpr Vec4(const float* data)
+        : x(data[0]), y(data[1]), z(data[2]), w(data[3])
+    {}
+
+    inline constexpr Vec4()
+        : x(0.f), y(0.f), z(0.f), w(0.f)
+    {}
+
+    inline constexpr Vec4 operator+(const Vec4& r) const
+    {
+        return { x + r.x, y + r.y, z + r.z, w + r.w };
+    }
+
+    inline constexpr Vec4 operator-(const Vec4& r) const
+    {
+        return { x - r.x, y - r.y, z - r.z, w - r.w };
+    }
+};
+
+struct Plane
+{
+    inline constexpr Plane(const Vec4& v)
+        : a(v.x), b(v.y), c(v.z), d(v.w)
+    {}
+
+    inline constexpr Plane(float a, float b, float c, float d)
+        : a(a), b(b), c(c), d(d)
+    {}
+
+    inline constexpr Plane()
+        : a(0.f), b(0.f), c(0.f), d(0.f)
+    {}
+
+    bool pointInFront(const Point& p) const
+    {
+        return a * p.x + b * p.y + c * p.z + d > 0.f;
+    }
+
+    bool pointBehind(const Point& p) const
+    {
+        return a * p.x + b * p.y + c * p.z + d < 0.f;
+    }
+
+    float a, b, c, d;
+};
+
+struct Frustum
+{
+    std::array<Plane, 6> planes;
+
+    inline constexpr Frustum(const Plane& left, const Plane& top, const Plane& right, const Plane& bottom, const Plane& near, const Plane& far)
+        : planes{ left, top, right, bottom, near, far }
+    {}
+};
+
 struct AABB
 {
     Point first;
-    Vector size;
+    Point second;
 
     inline bool containsPoint(const Point& p) const
     {
-        const Point second = first + size;
-
         return p.x > first.x && p.x < second.x
             && p.y > first.y && p.y < second.y
             && p.z > first.z && p.z < second.z;
     }
 };
 
-inline const AABB NDC_CUBE = {
-    .first = { -1.f, -1.f, -1.f},
-    .size = { 2.f, 2.f, 2.f }
-};
-
-struct Octogon
+inline const Frustum ViewFrustum(const Transform& viewProj)
 {
-    inline Octogon() = default;
+    const auto& m = viewProj.m;
 
-    inline constexpr Octogon(const Octogon& other)
-        : points(other.points)
-    {}
-
-    std::array<Point, 8> points;
-
-    using iterator = decltype(points)::iterator;
-    using const_iterator = decltype(points)::const_iterator;
-
-    inline constexpr const Point& operator[](size_t i) const { return points.at(i); };
-    inline constexpr Point& operator[](size_t i) { return points.at(i); }
-
-    iterator begin() { return points.begin(); }
-    iterator end() { return points.end(); }
-
-    const_iterator begin() const { return points.begin(); }
-    const_iterator end() const { return points.end(); }
-};
-
-inline Octogon AabbToOctogon(const AABB& aabb)
-{
-    Octogon out;
-
-    const auto& first = aabb.first;
-    const auto& size = aabb.size;
-
-    for (uint8_t i = 0; i < 4; ++i)
-        out[i] = first;
+    const Vec4& col0 = m[0];
+    const Vec4& col1 = m[1];
+    const Vec4& col2 = m[2];
+    const Vec4& col3 = m[3];
     
-    out[1].y += size.y;
-    out[2].y += size.y;
-    out[2].x += size.x;
-    out[3].x += size.x;
+    // Extraction des plans du frustum depuis la matrice VP
+    const Plane left(col3 + col0);
+    const Plane right(col3 - col0);
+    const Plane bottom(col3 + col1);
+    const Plane top(col3 - col1);
+    const Plane near(col3 + col2);
+    const Plane far(col3 - col2);
 
-    for (uint8_t i = 4; i < 8; ++i)
-    {
-        out[i] = out[i - 4];
-        out[i].z += size.z;
-    }
-
-    return out;
+    return { left, top, right, bottom, near, far };
 }
 
-inline const Octogon NDC_OCTOGON = AabbToOctogon(NDC_CUBE);
-
-inline bool AabbCrossesViewVolume(const AABB& aabb_ws, const Transform& viewProj, const Transform& viewProjInv)
+inline bool AabbCrossesFrustum(const AABB& aabb, const Frustum& frustum)
 {
-    // Premier passage : aabb contre frustum en espace monde
+    const std::array<Point, 8> corners = {
+        Point(aabb.first.x, aabb.first.y, aabb.first.z),
+        Point(aabb.first.x, aabb.first.y, aabb.second.z),
+        Point(aabb.first.x, aabb.second.y, aabb.first.z),
+        Point(aabb.first.x, aabb.second.y, aabb.second.z),
+        Point(aabb.second.x, aabb.first.y, aabb.first.z),
+        Point(aabb.second.x, aabb.first.y, aabb.second.z),
+        Point(aabb.second.x, aabb.second.y, aabb.first.z),
+        Point(aabb.second.x, aabb.second.y, aabb.second.z)
+    };
 
-    auto frustum_ws = NDC_OCTOGON;
-    for (auto& p : frustum_ws)
-        p = viewProjInv(p);
+    for (const Plane& plane : frustum.planes)
+    {
+        if (plane.pointBehind(corners[0])
+            && plane.pointBehind(corners[1])
+            && plane.pointBehind(corners[2])
+            && plane.pointBehind(corners[3])
+            && plane.pointBehind(corners[4])
+            && plane.pointBehind(corners[5])
+            && plane.pointBehind(corners[6])
+            && plane.pointBehind(corners[7]))
+        {
+            return false;
+        }
+    }
 
-    for (const auto& p : frustum_ws)
-        if (aabb_ws.containsPoint(p))
-            return true;
-    
-    // Deuxième passage : aabb contre frustum en espace projectif
+    // Could be improved by checking also in ndc space
+    // where the frustum is an aabb and the aabb is a frustum
 
-    auto aabb_ndc = AabbToOctogon(aabb_ws);
-    for (auto& p : aabb_ndc)
-        p = viewProj(p);
-
-    for (const auto& p : aabb_ndc)
-        if (NDC_CUBE.containsPoint(p))
-            return true;
-
-    return false;
+    return true;
 }

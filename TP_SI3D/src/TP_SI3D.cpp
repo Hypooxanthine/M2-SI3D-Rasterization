@@ -6,7 +6,7 @@
 #include "app_time.h"
 
 #include "Terrain.h"
-
+#include "FrustumCulling.h"
 
 class TP : public AppTime
 {
@@ -60,7 +60,14 @@ public:
             clear_key_state('c');
             m_CullChunks = !m_CullChunks;
             if (m_CullChunks == false)
+            {
+                std::cout << "Frustum culling disabled\n";
                 m_Terrain.stopCulling();
+            }
+            else
+            {
+                std::cout << "Frustum culling enabled\n";
+            }
         }
 
         if (m_CullChunks)

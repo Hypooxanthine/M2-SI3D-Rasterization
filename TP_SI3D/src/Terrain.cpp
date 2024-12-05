@@ -3,8 +3,6 @@
 #include <wavefront.h>
 #include <image_io.h>
 
-#define LOG_SHOWN_CHUNKS 1
-
 Terrain::Terrain(const TerrainSpecs& specs)
     : m_Specs(specs)
 {
@@ -79,7 +77,6 @@ void Terrain::draw(const Transform& view, const Transform& projection) const
 void Terrain::cullChunks(const Transform& view, const Transform& projection)
 {
     const Transform viewProj = projection * view;
-    const Transform viewProjInv = viewProj.inverse();
 
     #if LOG_SHOWN_CHUNKS
     size_t shownChunks = 0;
@@ -90,7 +87,7 @@ void Terrain::cullChunks(const Transform& view, const Transform& projection)
         const auto& chunk = m_ChunkManager.getChunks().at(i);
         auto offset = m_ChunkManager.getChunkFirstInstanceIndice().at(i);
 
-        if (AabbCrossesViewVolume(chunk.getboundingBox(), viewProj, viewProjInv))
+        if (AabbCrossesFrustum(chunk.getboundingBox(), ViewFrustum(viewProj)))
         {
             m_MultiMesh.setCommand(i, 0, chunk.getInstanceCount(), offset);
             #if LOG_SHOWN_CHUNKS
@@ -106,13 +103,18 @@ void Terrain::cullChunks(const Transform& view, const Transform& projection)
     m_MultiMesh.updateCommandsBuffer();
 
     #if LOG_SHOWN_CHUNKS
-    std::cout << "Drawing " << shownChunks << "/" << m_ChunkManager.getChunks().size() << " chunks\n";
+    if (shownChunks != m_LastShownChunks)
+    {
+        std::cout << "Drawing " << shownChunks << "/" << m_ChunkManager.getChunks().size() << " chunks\n";
+        m_LastShownChunks = shownChunks;
+    }
     #endif
 }
 
 void Terrain::stopCulling()
 {
     #if LOG_SHOWN_CHUNKS
+    m_LastShownChunks = 0;
     size_t shownChunks = 0;
     #endif
 

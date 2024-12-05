@@ -7,6 +7,8 @@
 
 #include <vector>
 
+#include "AppParameters.h"
+
 #include "mat.h"
 #include "Texture2D.h"
 #include "Shader.h"
@@ -52,4 +54,8 @@ private:
     MultiMesh m_MultiMesh;
     std::vector<Transform> m_InstanceTransforms;
     ShaderStorageBufferObject m_SSBO;
+
+    #if LOG_SHOWN_CHUNKS
+    size_t m_LastShownChunks = 0;
+    #endif
 };
