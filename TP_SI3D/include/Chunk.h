@@ -37,7 +37,11 @@ public:
                 const float Y = std::floor(normalizedY * static_cast<float>(maxHeight)) * cubeInitialSize;
                 const float Z = (static_cast<float>(j)) * cubeInitialSize;
 
-                size_t meshId = std::rand() % 2 == 0 ? GRASS_ID : DIRT_ID;
+                size_t meshId;
+
+                if (normalizedY > .9f) meshId = ICE_ID;
+                else if (normalizedY > .3f) meshId = SNOW_ID;
+                else meshId = GRASS_ID;
 
                 m_TransformsPerMesh.at(meshId).emplace_back(
                     Transpose(Scale(cubeDesiredSize / cubeInitialSize) * Translation(X, Y, Z))
