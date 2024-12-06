@@ -1,7 +1,9 @@
 #pragma once
 
 #include <vector>
+#include <map>
 
+#include "AppParameters.h"
 #include "mat.h"
 #include "image.h"
 #include "FrustumCulling.h"
@@ -18,8 +20,10 @@ public:
 
     inline void initInstanceTransforms(const Image& heightMap, size_t chunkWidth, size_t startX, size_t startY, size_t totalX, size_t totalY, size_t maxHeight, float cubeInitialSize, float cubeDesiredSize)
     {
-        m_InstanceTransforms.clear();
-        m_InstanceTransforms.reserve(chunkWidth * chunkWidth);
+        m_InstanceCount = 0;
+        m_TransformsPerMesh.clear();
+        for (size_t i = 0; i < MESH_COUNT; ++i)
+            m_TransformsPerMesh[i] = {};
 
         for (size_t i = startX; i < startX + chunkWidth; i++)
         {
@@ -29,12 +33,16 @@ public:
                 const float normalizedZ = static_cast<float>(j) / totalY;
                 const float normalizedY = heightMap.texture(normalizedX, normalizedZ).r;
 
-                // @todo I don't think the desired size is matched with these formulas.
                 const float X = (static_cast<float>(i)) * cubeInitialSize;
                 const float Y = std::floor(normalizedY * static_cast<float>(maxHeight)) * cubeInitialSize;
                 const float Z = (static_cast<float>(j)) * cubeInitialSize;
 
-                m_InstanceTransforms.emplace_back(Transpose(Scale(cubeDesiredSize / cubeInitialSize) * Translation(X, Y, Z)));
+                size_t meshId = std::rand() % 2 == 0 ? GRASS_ID : DIRT_ID;
+
+                m_TransformsPerMesh.at(meshId).emplace_back(
+                    Transpose(Scale(cubeDesiredSize / cubeInitialSize) * Translation(X, Y, Z))
+                );
+                ++m_InstanceCount;
 
                 // std::cout << "Instance " << i << ", " << j << " created\n";
             }
@@ -44,13 +52,14 @@ public:
         m_BoundingBox.second = { (startX + chunkWidth) * cubeDesiredSize, maxHeight * cubeDesiredSize, (startY + chunkWidth) * cubeDesiredSize };
     }
 
-    inline const auto& getInstanceTransforms() const { return m_InstanceTransforms; }
+    inline constexpr size_t getInstanceCount() const { return m_InstanceCount; }
 
-    inline size_t getInstanceCount() const { return m_InstanceTransforms.size(); }
+    inline const auto& getMeshTransforms() const { return m_TransformsPerMesh; }
 
     inline const AABB& getboundingBox() const { return m_BoundingBox; }
 
 private:
-    std::vector<Transform> m_InstanceTransforms;
+    std::map<size_t, std::vector<Transform>> m_TransformsPerMesh;
+    size_t m_InstanceCount;
     AABB m_BoundingBox;
 };

@@ -134,11 +134,17 @@ public:
     inline constexpr const VertexArray& getVao() const { return m_VAO; }
     inline constexpr const StaticVertexBuffer& getVbo() const { return m_VBO; }
     inline constexpr const StaticIndexBuffer& getEbo() const { return m_EBO; }
+
+    inline size_t getCommandMeshIndex(size_t commandIndex) const
+    {
+        return m_CommandMeshIndex.at(commandIndex);
+    }
     
     inline size_t addCommand(size_t meshIndex, GLuint instanceCount, GLuint baseInstance)
     {
         size_t id = m_IndirectCommands.size();
         auto& command = m_IndirectCommands.emplace_back();
+        m_CommandMeshIndex.emplace_back(meshIndex);
         
         setCommand(id, meshIndex, instanceCount, baseInstance);
 
@@ -211,6 +217,7 @@ private:
     std::vector<GLuint> m_Indices;
     std::vector<MeshTracker> m_MeshTrackers;
     std::vector<DrawElementsIndirectCommand> m_IndirectCommands;
+    std::vector<size_t> m_CommandMeshIndex; // Pour chaque commande i, m_CommandMeshIndex[i] sera l'indice du mesh de la commande
     bool m_NeedsUpdateMesh = true; // Même si on n'a ajouté aucun mesh au départ, on peut toujours créer des buffers vides...
     bool m_NeedsUpdateCommand = true;
 

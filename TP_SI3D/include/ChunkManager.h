@@ -13,6 +13,7 @@ public:
         m_ChunksFirstInstanceIndex.clear();
         m_Chunks.reserve(chunksX * chunksY);
         m_ChunksFirstInstanceIndex.reserve(chunksX * chunksY);
+        m_TotalInstanceCount = 0;
 
         for (size_t i = 0; i < chunksX; ++i)
         {
@@ -20,24 +21,21 @@ public:
             {
                 auto& chunk = m_Chunks.emplace_back();
                 chunk.initInstanceTransforms(heightMap, chunkWidth, i * chunkWidth, j * chunkWidth, chunksX * chunkWidth, chunksY * chunkWidth, maxHeight, cubeInitialSize, cubeDesiredSize);
-                
-                size_t lastChunkId = m_Chunks.size() - 1;
-                size_t firstInstanceIndex = 0;
-                if (lastChunkId > 0)
-                    firstInstanceIndex = m_Chunks.at(lastChunkId - 1).getInstanceCount() + m_ChunksFirstInstanceIndex.back();
 
-                m_ChunksFirstInstanceIndex.emplace_back(firstInstanceIndex);
-
-                std::cout << "Chunk " << i << ", " << j << " created, with instance first index: " << firstInstanceIndex << "\n";
+                m_ChunksFirstInstanceIndex.emplace_back(m_TotalInstanceCount);
+                m_TotalInstanceCount += chunk.getInstanceCount();
             }
         }
     }
 
-    const auto& getChunks() const { return m_Chunks; }
+    inline const auto& getChunks() const { return m_Chunks; }
 
-    const auto& getChunkFirstInstanceIndice() const { return m_ChunksFirstInstanceIndex; }
+    inline const auto& getChunkFirstInstanceIndice() const { return m_ChunksFirstInstanceIndex; }
+
+    inline size_t getTotalInstanceCount() const { return m_TotalInstanceCount; }
 
 private:
     std::vector<Chunk> m_Chunks;
     std::vector<size_t> m_ChunksFirstInstanceIndex;
+    size_t m_TotalInstanceCount = 0;
 };

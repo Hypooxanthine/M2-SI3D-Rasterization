@@ -30,8 +30,10 @@ void Terrain::loadData()
     
     ASSERT(m_CubeShader.load("data/shaders/TP_SI3D/Cube.glsl"), "Could not load data/shaders/TP_SI3D/Cube.glsl");
 
-    m_Meshes.emplace_back(read_indexed_mesh("data/CubeWorld/Pixel Blocks/OBJ/Dirt.obj"));
-    m_Meshes.emplace_back(read_indexed_mesh("data/CubeWorld/Pixel Blocks/OBJ/Grass.obj"));
+    for (const auto& path : MESHES)
+    {
+        m_Meshes.emplace_back(read_indexed_mesh(path.data()));
+    }
     
     for (const auto& mesh : m_Meshes)
         m_MultiMesh.addMesh(mesh);
@@ -47,19 +49,27 @@ void Terrain::initChunks()
 
     m_SSBO.generate();
     m_SSBO.setBindingPoint(0);
-    std::cout << "Init ssbo data size: " << m_Specs.chunkX * m_Specs.chunkY * m_Specs.chunkWidth * m_Specs.chunkWidth << " * " << sizeof(Transform)
-        << " = " << m_Specs.chunkX * m_Specs.chunkY * m_Specs.chunkWidth * m_Specs.chunkWidth * sizeof(Transform) << "B \n";
-    m_SSBO.setData(nullptr, m_Specs.chunkX * m_Specs.chunkY * m_Specs.chunkWidth * m_Specs.chunkWidth * sizeof(Transform));
+    // std::cout << "Init ssbo data size: " << m_Specs.chunkX * m_Specs.chunkY * m_Specs.chunkWidth * m_Specs.chunkWidth << " * " << sizeof(Transform)
+    //     << " = " << m_Specs.chunkX * m_Specs.chunkY * m_Specs.chunkWidth * m_Specs.chunkWidth * sizeof(Transform) << "B \n";
+    m_SSBO.setData(nullptr, m_ChunkManager.getTotalInstanceCount() * sizeof(Transform));
 
     for (size_t i = 0; i < m_ChunkManager.getChunks().size(); ++i)
     {
         auto& chunk = m_ChunkManager.getChunks().at(i);
         auto offset = m_ChunkManager.getChunkFirstInstanceIndice().at(i);
-        m_SSBO.setSubData(chunk.getInstanceTransforms().data(), chunk.getInstanceTransforms().size() * sizeof(Transform), offset * sizeof(Transform));
+
+        for (auto&& [meshId, transforms] : chunk.getMeshTransforms())
+        {
+            const auto* data = transforms.data();
+            const auto& dataSize = transforms.size();
+
+            m_SSBO.setSubData(data, dataSize * sizeof(Transform), offset * sizeof(Transform));
+            m_MultiMesh.addCommand(meshId, transforms.size(), offset);
+
+            offset += dataSize;
+        }
 
         // std::cout << "SSBO subdata, offset: " << offset << ", data size: " << chunk.getInstanceTransforms().size() << "\n";
-
-        m_MultiMesh.addCommand(0, chunk.getInstanceCount(), offset);
     }
     m_MultiMesh.updateCommandsBuffer();
 }
@@ -82,22 +92,27 @@ void Terrain::cullChunks(const Transform& view, const Transform& projection)
     size_t shownChunks = 0;
     #endif
 
+    size_t commandCounter = 0;
+
     for (size_t i = 0; i < m_ChunkManager.getChunks().size(); ++i)
     {
         const auto& chunk = m_ChunkManager.getChunks().at(i);
         auto offset = m_ChunkManager.getChunkFirstInstanceIndice().at(i);
+        auto meshId = m_MultiMesh.getCommandMeshIndex(i);
 
-        if (AabbCrossesFrustum(chunk.getboundingBox(), ViewFrustum(viewProj)))
+        bool show = AabbCrossesFrustum(chunk.getboundingBox(), ViewFrustum(viewProj));
+
+        for (auto&& [meshId, transforms] : chunk.getMeshTransforms())
         {
-            m_MultiMesh.setCommand(i, 0, chunk.getInstanceCount(), offset);
-            #if LOG_SHOWN_CHUNKS
-            ++shownChunks;
-            #endif
+            auto instanceCount = (show ? transforms.size() : 0);
+            m_MultiMesh.setCommand(commandCounter, meshId, instanceCount, offset);
+            ++commandCounter;
+            offset += transforms.size();
         }
-        else
-        {
-            m_MultiMesh.setCommand(i, 0, 0, offset);
-        }
+
+        #if LOG_SHOWN_CHUNKS
+        if (show) ++shownChunks;
+        #endif
     }
 
     m_MultiMesh.updateCommandsBuffer();
@@ -118,12 +133,21 @@ void Terrain::stopCulling()
     size_t shownChunks = 0;
     #endif
 
+    size_t commandCounter = 0;
+
     for (size_t i = 0; i < m_ChunkManager.getChunks().size(); ++i)
     {
         const auto& chunk = m_ChunkManager.getChunks().at(i);
         auto offset = m_ChunkManager.getChunkFirstInstanceIndice().at(i);
+        auto meshId = m_MultiMesh.getCommandMeshIndex(i);
 
-        m_MultiMesh.setCommand(i, 0, chunk.getInstanceCount(), offset);
+        for (auto&& [meshId, transforms] : chunk.getMeshTransforms())
+        {
+            m_MultiMesh.setCommand(commandCounter, meshId, transforms.size(), offset);
+            ++commandCounter;
+            offset += transforms.size();
+        }
+            
         #if LOG_SHOWN_CHUNKS
         ++shownChunks;
         #endif

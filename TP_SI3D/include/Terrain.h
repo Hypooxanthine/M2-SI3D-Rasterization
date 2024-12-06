@@ -21,11 +21,11 @@ class Terrain
 public:
     struct TerrainSpecs
     {
-        size_t chunkX = 50;
-        size_t chunkY = 50;
+        size_t chunkX = 10;
+        size_t chunkY = 10;
         size_t chunkWidth = 16;
-        size_t cubesHeight = 40;
-        float cubeSize = .1f;
+        size_t cubesHeight = std::min(chunkX, chunkY) * .5f;
+        float cubeSize = .01f;
     };
 public:
     Terrain(const TerrainSpecs& specs);
