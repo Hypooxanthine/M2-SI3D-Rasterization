@@ -51,6 +51,18 @@ void main( )
         float diffuse = metallic_diffuse_shininess.y;
         float shininess = metallic_diffuse_shininess.z;
 
+    /*
+    if (gl_LocalInvocationID.x != 0 || gl_LocalInvocationID.y != 0)
+    {
+        bool shouldCompute = false;
+
+        
+
+        if (!shouldCompute)
+            return;
+    }
+    */
+    
     vec3 color = vec3(0.0);
     for (uint i = 0; i < pointLightCount; i++)
     {

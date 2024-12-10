@@ -36,11 +36,23 @@ void main( )
     g_position_matid.xyz = v_position;
     g_normal.xyz = v_normal;
 
+    uint matid;
+    vec3 albedo;
+    float metallic;
+    float diffuse;
+    float shininess;
+
     #if 1 // Blinn-Phong
-        g_position_matid.w = 1; // Blinn-Phong matid = 1
-        g_albedo = vec4(1.0, 1.0, 1.0, 1.0);
-        g_metallic_diffuse_shininess = vec4(.0, .3, 50.0, 1.0);
+        matid = 1;
+        albedo = vec3(1.0, 0.0, 0.0);
+        metallic = .0;
+        diffuse = 0.7;
+        shininess = 5.0;
     #endif
+
+    g_position_matid.w = float(matid);
+    g_albedo = vec4(albedo, 1.0);
+    g_metallic_diffuse_shininess = vec4(metallic, diffuse, shininess, 1.0);
 }
 
 #endif

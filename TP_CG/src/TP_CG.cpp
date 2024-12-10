@@ -74,7 +74,11 @@ public:
     int init( )
     {
         m_grid= make_grid();
-        m_objet= read_mesh("data/cube.obj");
+        m_objet= read_mesh("data/dragon.obj");
+        
+        Point min, max;
+        m_objet.bounds(min, max);
+        m_camera.lookat(min, max);
 
         // etape 1 : creer le shader program
         m_GShader.generate();
@@ -193,7 +197,7 @@ public:
         m_GShader.bind();
 
         // Transformations MVP
-        Transform model = RotationX(global_time() / 20);
+        Transform model = Identity();// RotationX(global_time() / 20);
         Transform normalMatrix = model.normal();
         Transform view = m_camera.view();
         Transform projection = m_camera.projection(window_width(), window_height(), 45);
@@ -251,7 +255,6 @@ public:
         // On dessine la texture contenant les couleurs finales
         windowFrameBuffer.blitFrom(intermediateFrameBuffer, window_width(), window_height());
         windowFrameBuffer.bind();
-        
         return 1;
     }
 
