@@ -7,6 +7,9 @@ obj/
 *.make
 *.cbp
 *.png
+data/dragon.obj
+data/rungholt/**
+data/sponza/**
 !data/CubeWorld/**
 
 *.workspace
