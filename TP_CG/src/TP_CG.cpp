@@ -73,7 +73,6 @@ public:
     
     int init( )
     {
-        m_grid= make_grid();
         m_objet= read_mesh("data/dragon.obj");
         
         Point min, max;
@@ -82,11 +81,13 @@ public:
 
         // etape 1 : creer le shader program
         m_GShader.generate();
-        m_ColorsComputeShader.generate();
+        m_FirstPassColorsShader.generate();
+        m_SecondPassColorShader.generate();
 
         m_ShadersCompileOK = true;
         m_ShadersCompileOK = m_ShadersCompileOK && m_GShader.reload(s_GShaderPath);
-        m_ShadersCompileOK = m_ShadersCompileOK && m_ColorsComputeShader.reload(s_ColorsComputeShaderPath);
+        m_ShadersCompileOK = m_ShadersCompileOK && m_FirstPassColorsShader.reload(s_FirstPassColors);
+        m_ShadersCompileOK = m_ShadersCompileOK && m_SecondPassColorShader.reload(s_SecondPassColors);
 
         if (m_ShadersCompileOK)
             std::cout << "Shaders compiled successfully" << std::endl;
@@ -139,7 +140,6 @@ public:
     
     int quit( )
     {
-        m_grid.release();
         m_objet.release();
         return 0;
     }
@@ -175,9 +175,14 @@ public:
                 std::cerr << "Couldn't reload " << s_GShaderPath << "\n";
                 return 1;
             }
-            if (!m_ColorsComputeShader.reload(s_ColorsComputeShaderPath))
+            if (!m_FirstPassColorsShader.reload(s_FirstPassColors))
             {
-                std::cerr << "Couldn't reload " << s_ColorsComputeShaderPath << "\n";
+                std::cerr << "Couldn't reload " << s_FirstPassColors << "\n";
+                return 1;
+            }
+            if (!m_SecondPassColorShader.reload(s_SecondPassColors))
+            {
+                std::cerr << "Couldn't reload " << s_SecondPassColors << "\n";
                 return 1;
             }
 
@@ -211,7 +216,6 @@ public:
         
         // Draw calls
         m_objet.draw(m_GShader.getRenderId(), /* use position */ true, /* use texcoord */ false, /* use normal */ true, /* use color */ false, /* use material index*/ false);
-        draw(m_grid, Identity(), m_camera);
 
         /* Deuxième passe : on envoie les textures au compute shader */
 
@@ -221,49 +225,77 @@ public:
         glClearColor(0.2f, 0.2f, 0.2f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // On utilise le compute shader
-        m_ColorsComputeShader.bind();
+        /* Calculer un pixel sur 16 */
 
-        // On envoie les données du gbuffer au compute shader
+        // On utilise le premier compute shader pour calculer un pixel sur 16
+        m_FirstPassColorsShader.bind();
+
+        // On envoie les données du gbuffer (entre autres) au compute shader
+        setComputeShaderData(m_FirstPassColorsShader, GL_READ_ONLY);
+
+        m_FirstPassColorsShader.dispatch(
+            16, 16, 1,
+            window_width(), window_height(), 1
+        );        
+
+        // On attend que le compute shader ait fini
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+        /* Calculer ou interpoler les autres pixels */
+
+        // On utilise le second compute shader
+        m_SecondPassColorShader.bind();
+
+        // On envoie les données du gbuffer (entre autres) au compute shader
+        // En read/write ici car on a besoin de récupérer les valeurs des pixels
+        // déjà calculés, pour les interpoler justement
+        setComputeShaderData(m_SecondPassColorShader, GL_READ_WRITE);
+
+        m_SecondPassColorShader.dispatch(
+            16, 16, 1,
+            window_width(), window_height(), 1
+        );
+
+        // On attend que le compute shader ait fini
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+        /* Récupérer la texture calculée par les compute shaders pour l'afficher */
+
+        // On place la texture depuis le framebuffer intermédiaire
+        // vers le framebuffer de la fenêtre (renderid = 0)
+        windowFrameBuffer.blitFrom(intermediateFrameBuffer, window_width(), window_height());
+
+        // On utilise maintenant le framebuffer par défaut pour le swap buffers
+        windowFrameBuffer.bind();
+        return 1;
+    }
+
+    void setComputeShaderData(ComputeShader& shader, GLenum readwrite)
+    {
         GLuint slot = 0;
-        m_ColorsComputeShader.setTextureUniform(position_matid_Texture, slot++, "g_position_matid");
-        m_ColorsComputeShader.setTextureUniform(normalTexture, slot++, "g_normal");
-        m_ColorsComputeShader.setTextureUniform(albedoTexture, slot++, "g_albedo");
-        m_ColorsComputeShader.setTextureUniform(metallic_diffuse_shininessTexture, slot++, "g_metallic_diffuse_shininess");
-        m_ColorsComputeShader.setUniform("cameraPos", m_camera.position());
+        shader.setTextureUniform(position_matid_Texture, slot++, "g_position_matid");
+        shader.setTextureUniform(normalTexture, slot++, "g_normal");
+        shader.setTextureUniform(albedoTexture, slot++, "g_albedo");
+        shader.setTextureUniform(metallic_diffuse_shininessTexture, slot++, "g_metallic_diffuse_shininess");
+        shader.setUniform("cameraPos", m_camera.position());
 
         // Pour que le compute shader sache quelle est la vraie taille de la frame
         // (les dimensions de la frame ne sont pas forcément un multiple de 16)
-        m_ColorsComputeShader.setUniform("frameWidth", window_width());
-        m_ColorsComputeShader.setUniform("frameHeight", window_height());
+        shader.setUniform("frameWidth", window_width());
+        shader.setUniform("frameHeight", window_height());
 
         // On envoie les lumières au compute shader
         lightsSSBO.bind();
 
         // Texture sur laquelle on va écrire les couleurs finales depuis le compute shader
-        glBindImageTexture(0, colorTexture.getRenderId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-
-        m_ColorsComputeShader.dispatch(
-            16, 16, 1,
-            window_width(), window_height(), 1
-        );
-        
-
-        // On attend que le compute shader ait fini
-        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-
-        // On dessine la texture contenant les couleurs finales
-        windowFrameBuffer.blitFrom(intermediateFrameBuffer, window_width(), window_height());
-        windowFrameBuffer.bind();
-        return 1;
+        glBindImageTexture(0, colorTexture.getRenderId(), 0, GL_FALSE, 0, readwrite, GL_RGBA32F);
     }
 
 protected:
     Mesh m_objet;
-    Mesh m_grid;
     Orbiter m_camera;
     Shader m_GShader;
-    ComputeShader m_ColorsComputeShader;
+    ComputeShader m_FirstPassColorsShader, m_SecondPassColorShader;
     bool m_ShadersCompileOK = true;
 
     Texture2D zbufferTexture;
@@ -276,7 +308,8 @@ protected:
 
     static constexpr size_t s_TexturesWidth = 4096, s_TexturesHeight = 4096;
     static constexpr std::string_view s_GShaderPath = "TP_CG/shaders/gshader.glsl";
-    static constexpr std::string_view s_ColorsComputeShaderPath = "TP_CG/shaders/compute_colors.glsl";
+    static constexpr std::string_view s_FirstPassColors = "TP_CG/shaders/first_pass_colors.glsl";
+    static constexpr std::string_view s_SecondPassColors = "TP_CG/shaders/second_pass_colors.glsl";
 };
 
 

@@ -30,39 +30,29 @@ uniform int frameWidth;
 uniform int frameHeight;
 uniform vec3 cameraPos;
 
-layout(binding = 0, rgba32f) uniform image2D outputTexture;
+layout(binding = 0, rgba32f) writeonly uniform image2D outputTexture;
 
-void main( )
+ivec2 pixel;
+vec4 position_matid;
+    float matid;
+    vec3 p;
+vec3 normal;
+vec3 albedo;
+vec3 metallic_diffuse_shininess;
+    float metallic;
+    float diffuse;
+    float shininess;
+
+vec3 computePixelColor()
 {
-    ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
-    if (pixel.x >= frameWidth || pixel.y >= frameHeight)
-    {
-        return;
-    }
+        p = position_matid.xyz;
+    normal = texelFetch(g_normal, pixel, 0).xyz;
+    albedo = texelFetch(g_albedo, pixel, 0).xyz;
+    metallic_diffuse_shininess = texelFetch(g_metallic_diffuse_shininess, pixel, 0).xyz;
+        metallic = metallic_diffuse_shininess.x;
+        diffuse = metallic_diffuse_shininess.y;
+        shininess = metallic_diffuse_shininess.z;
 
-    vec4 position_matid = texelFetch(g_position_matid, pixel, 0);
-        float matid = position_matid.w;
-        if (matid == 0.0) return;
-        vec3 p = position_matid.xyz;
-    vec3 normal = texelFetch(g_normal, pixel, 0).xyz;
-    vec3 albedo = texelFetch(g_albedo, pixel, 0).xyz;
-    vec3 metallic_diffuse_shininess = texelFetch(g_metallic_diffuse_shininess, pixel, 0).xyz;
-        float metallic = metallic_diffuse_shininess.x;
-        float diffuse = metallic_diffuse_shininess.y;
-        float shininess = metallic_diffuse_shininess.z;
-
-    /*
-    if (gl_LocalInvocationID.x != 0 || gl_LocalInvocationID.y != 0)
-    {
-        bool shouldCompute = false;
-
-        
-
-        if (!shouldCompute)
-            return;
-    }
-    */
-    
     vec3 color = vec3(0.0);
     for (uint i = 0; i < pointLightCount; i++)
     {
@@ -89,7 +79,23 @@ void main( )
         color += ((1.0 - metallic) * diffuseColor + specularColor);
     }
 
-    imageStore(outputTexture, pixel, vec4(color, 1.0));
+    return color;
+}
+
+void main( )
+{
+    pixel = ivec2(gl_GlobalInvocationID.xy);
+    if (pixel.x >= frameWidth || pixel.y >= frameHeight)
+    {
+        return;
+    }
+
+    position_matid = texelFetch(g_position_matid, pixel, 0);
+        matid = position_matid.w;
+        if (matid == 0.0) return;
+
+    if (gl_LocalInvocationID.x == 0 && gl_LocalInvocationID.y == 0)
+        imageStore(outputTexture, pixel, vec4(computePixelColor(), 1.0));
 }
 
 #endif
