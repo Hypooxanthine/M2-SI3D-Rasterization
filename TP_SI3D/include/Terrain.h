@@ -21,8 +21,8 @@ class Terrain
 public:
     struct TerrainSpecs
     {
-        size_t chunkX = 70;
-        size_t chunkY = 70;
+        size_t chunkX = 10;
+        size_t chunkY = 10;
         size_t chunkWidth = 16;
         size_t cubesHeight = std::min(chunkX, chunkY) * chunkWidth * .12f;
         float cubeSize = .05f;
@@ -31,6 +31,8 @@ public:
     Terrain(const TerrainSpecs& specs);
     Terrain();
     ~Terrain();
+
+    const TerrainSpecs& getSpecs() const { return m_Specs; }
 
     void draw(const Transform& view, const Transform& projection) const;
     void cullChunks(const Transform& view, const Transform& projection);

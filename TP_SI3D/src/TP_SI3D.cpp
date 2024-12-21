@@ -8,6 +8,8 @@
 #include "Terrain.h"
 #include "FrustumCulling.h"
 
+#include "FrameBuffer.h"
+
 class TP : public AppTime
 {
 public:
@@ -23,6 +25,18 @@ public:
         glDepthFunc(GL_LESS);                       // ztest, conserver l'intersection la plus proche de la camera
         glEnable(GL_DEPTH_TEST);                    // activer le ztest
 
+        m_WindowFBO.generate(true);
+
+        m_ShadowMap.generateForDepth(4096, 4096);
+        m_ShadowFBO.generate();
+        m_ShadowFBO.attachTexture(m_ShadowMap, FrameBuffer::TextureAttachment::Depth, 0);
+
+        const auto& specs = m_Terrain.getSpecs();
+        float terrainSizeX = specs.chunkWidth * specs.chunkX * specs.cubeSize;
+        float terrainSizeY = specs.chunkWidth * specs.chunkY * specs.cubeSize;
+        float terrainSizeZ = specs.cubesHeight * specs.cubeSize;
+        m_TerrainCenter = Point(terrainSizeX / 2.f, terrainSizeY / 2.f, terrainSizeZ / 2.f);
+
         return 0;   // pas d'erreur, sinon renvoyer -1
     }
     
@@ -35,6 +49,8 @@ public:
     // dessiner une nouvelle image
     int render( ) override
     {
+        /* PARTIE EVENEMENTS */
+
         // recupere l'etat de la souris
         int mx, my;
         unsigned int mb= SDL_GetRelativeMouseState(&mx, &my);
@@ -70,9 +86,25 @@ public:
             }
         }
 
+        /* PARTIE GESTION DATA */
+
         if (m_CullChunks)
             m_Terrain.cullChunks(m_camera.view(), m_camera.projection());
 
+        /* PARTIE RENDU */
+
+        // Première passe : shadow map
+
+        m_ShadowFBO.bind();
+        glViewport(0, 0, m_ShadowMap.getWidth(), m_ShadowMap.getHeight());
+        glClear(GL_DEPTH_BUFFER_BIT);
+        
+        m_Terrain.draw(m_LightView, m_LightProjection);
+
+        // Deuxième passe : rendu de la scène
+
+        m_WindowFBO.bind();
+        glViewport(0, 0, window_width(), window_height());
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
         m_Terrain.draw(m_camera.view(), m_camera.projection());
@@ -80,9 +112,21 @@ public:
         return 1;
     }
 
+    void updateLightTransforms()
+    {
+        const auto& specs = m_Terrain.getSpecs();
+        m_LightView = Ortho(0.f, m_TerrainCenter.x * 2.f, 0.f, m_TerrainCenter.y * 2.f, 0.f, m_TerrainCenter.z * 2.f);
+    }
+
 protected:
     Orbiter m_camera;
     Terrain m_Terrain;
+
+    FrameBuffer m_ShadowFBO, m_WindowFBO;
+    Texture2D m_ShadowMap;
+
+    Point m_LightPos, m_TerrainCenter;
+    Transform m_LightView, m_LightProjection, m_LightViewport;
 
     bool m_CullChunks = true;
 };

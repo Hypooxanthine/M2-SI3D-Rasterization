@@ -100,6 +100,9 @@ public:
 
     inline void setupBindings() const
     {
+        if (m_ColorAttachmentsCount == 0)
+            return;
+        
         bind();
         glDrawBuffers(m_ColorAttachmentsCount, s_ColorAttachmentsInOrder.data());
 
