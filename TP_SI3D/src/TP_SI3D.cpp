@@ -10,6 +10,45 @@
 
 #include "FrameBuffer.h"
 
+Mesh make_frustum( )
+{
+    glLineWidth(2);    
+    Mesh camera= Mesh(GL_LINES);
+    
+    camera.color(Yellow());
+    // face avant
+    camera.vertex(-1, -1, -1);
+    camera.vertex(-1, 1, -1);
+    camera.vertex(-1, 1, -1);
+    camera.vertex(1, 1, -1);
+    camera.vertex(1, 1, -1);
+    camera.vertex(1, -1, -1);
+    camera.vertex(1, -1, -1);
+    camera.vertex(-1, -1, -1);
+    
+    // face arriere
+    camera.vertex(-1, -1, 1);
+    camera.vertex(-1, 1, 1);
+    camera.vertex(-1, 1, 1);
+    camera.vertex(1, 1, 1);
+    camera.vertex(1, 1, 1);
+    camera.vertex(1, -1, 1);
+    camera.vertex(1, -1, 1);
+    camera.vertex(-1, -1, 1);
+    
+    // aretes
+    camera.vertex(-1, -1, -1);
+    camera.vertex(-1, -1, 1);
+    camera.vertex(-1, 1, -1);
+    camera.vertex(-1, 1, 1);
+    camera.vertex(1, 1, -1);
+    camera.vertex(1, 1, 1);
+    camera.vertex(1, -1, -1);
+    camera.vertex(1, -1, 1);
+    
+    return camera;
+}
+
 class TP : public AppTime
 {
 public:
@@ -36,6 +75,15 @@ public:
         float terrainSizeY = specs.chunkWidth * specs.chunkY * specs.cubeSize;
         float terrainSizeZ = specs.cubesHeight * specs.cubeSize;
         m_TerrainCenter = Point(terrainSizeX / 2.f, terrainSizeY / 2.f, terrainSizeZ / 2.f);
+        m_camera.lookat(Point(0.f, 0.f, 0.f), Point(terrainSizeX, terrainSizeY, terrainSizeZ));
+        
+        Transform translation = Translation(-Vector(m_TerrainCenter));
+        Transform rotation = RotationX(-90.f);
+        m_LightPos = Point(terrainSizeX / 2.f, terrainSizeY / 2.f, terrainSizeZ);
+        m_LightView = translation * rotation;
+        m_LightProjection = Ortho(-terrainSizeX, terrainSizeX, -terrainSizeY, terrainSizeY, 0.f, terrainSizeZ * 2.f);
+
+        m_DebugLightCube = make_frustum();
 
         return 0;   // pas d'erreur, sinon renvoyer -1
     }
@@ -43,6 +91,8 @@ public:
     // destruction des objets de l'application
     int quit( ) override
     {
+        m_DebugLightCube.release();
+
         return 0;
     }
     
@@ -88,6 +138,8 @@ public:
 
         /* PARTIE GESTION DATA */
 
+        updateLightView();
+
         if (m_CullChunks)
             m_Terrain.cullChunks(m_camera.view(), m_camera.projection());
 
@@ -108,14 +160,19 @@ public:
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
         m_Terrain.draw(m_camera.view(), m_camera.projection());
+
+        // Debug : affichage d'une boite pour voir la lumiere
+        draw(m_DebugLightCube, Inverse(m_LightProjection * m_LightView), m_camera);        
         
         return 1;
     }
 
-    void updateLightTransforms()
+    void updateLightView()
     {
         const auto& specs = m_Terrain.getSpecs();
-        m_LightView = Ortho(0.f, m_TerrainCenter.x * 2.f, 0.f, m_TerrainCenter.y * 2.f, 0.f, m_TerrainCenter.z * 2.f);
+        float terrainSizeX = specs.chunkWidth * specs.chunkX * specs.cubeSize;
+        float terrainSizeY = specs.chunkWidth * specs.chunkY * specs.cubeSize;
+        float terrainSizeZ = specs.cubesHeight * specs.cubeSize;
     }
 
 protected:
@@ -127,6 +184,8 @@ protected:
 
     Point m_LightPos, m_TerrainCenter;
     Transform m_LightView, m_LightProjection, m_LightViewport;
+
+    Mesh m_DebugLightCube;
 
     bool m_CullChunks = true;
 };

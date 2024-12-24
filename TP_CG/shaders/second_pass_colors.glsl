@@ -30,6 +30,8 @@ uniform int frameWidth;
 uniform int frameHeight;
 uniform vec3 cameraPos;
 
+uniform uint step;
+
 layout(binding = 0, rgba32f) uniform image2D outputTexture;
 
 ivec2 pixel;
@@ -97,59 +99,6 @@ float gray(vec3 color)
     return 0.21f * color.r + 0.71f * color.g + 0.08f * color.b;
 }
 
-bool shouldCompute(float threshold)
-{
-    float neighborsCount = 4.f;
-    vec3 s = vec3(0.f);
-    vec3 ss = vec3(0.f);
-
-    uint tileWidth = 4;
-    uint tileHeight = 4;
-
-    uint xPrev = (gl_GlobalInvocationID.x - gl_GlobalInvocationID.x % tileWidth);
-    uint xNext = xPrev + tileWidth;
-    bool xNextValid = xNext < frameWidth;
-
-    uint yPrev = (gl_GlobalInvocationID.y - gl_GlobalInvocationID.y % tileHeight);
-    uint yNext = yPrev + tileHeight;
-    bool yNextValid = yNext < frameHeight;
-
-    vec3 a = imageLoad(outputTexture, ivec2(xPrev, yPrev)).xyz;
-    s = s + a;
-    ss = ss + a*a;
-
-    if (xNextValid)
-    {
-        vec3 b = imageLoad(outputTexture, ivec2(xNext, yPrev)).xyz;
-        s = s + b;
-        ss = ss + b*b;
-    }
-    else
-        neighborsCount = neighborsCount / 2.f;
-
-    if (yNextValid)
-    {
-        vec3 c = imageLoad(outputTexture, ivec2(xPrev, yNext)).xyz;
-        s = s + c;
-        ss = ss + c*c;
-
-        if (xNextValid)
-        {
-            vec3 d = imageLoad(outputTexture, ivec2(xNext, yNext)).xyz;
-            s = s + d;
-            ss = ss + d*d;
-        }
-    }
-    else
-        neighborsCount = neighborsCount / 2.f;
-
-    s = s / neighborsCount;
-    ss = ss / neighborsCount;
-    float v = gray(ss - s*s);
-
-    return v > threshold;
-}
-
 void main( )
 {
     pixel = ivec2(gl_GlobalInvocationID.xy);
@@ -167,10 +116,7 @@ void main( )
 
     vec3 color;
 
-    if (shouldCompute(0.f))
-        color = computePixelColor();
-    else
-        color = interpolatePixelColor();
+    color = computePixelColor();
 
     imageStore(outputTexture, pixel, vec4(color, 1.0));
 }
