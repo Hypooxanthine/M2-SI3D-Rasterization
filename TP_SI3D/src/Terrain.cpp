@@ -29,6 +29,7 @@ void Terrain::loadData()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     
     ASSERT(m_CubeShader.load("data/shaders/TP_SI3D/Cube.glsl"), "Could not load data/shaders/TP_SI3D/Cube.glsl");
+    ASSERT(m_CubeShadowBuilder.load("data/shaders/TP_SI3D/CubeShadowBuilder.glsl"), "Could not load data/shaders/TP_SI3D/CubeShadowBuilder.glsl");
 
     for (const auto& path : MESHES)
     {
@@ -76,9 +77,21 @@ void Terrain::initChunks()
 
 void Terrain::draw(const Transform& view, const Transform& projection) const
 {
+    m_CubeShadowBuilder.bind();
+    m_CubeShadowBuilder.setUniform("viewMatrix", view);
+    m_CubeShadowBuilder.setUniform("projectionMatrix", projection);
+
+    m_MultiMesh.draw();
+}
+
+void Terrain::draw(const Transform& view, const Transform& projection, const Texture2D& shadowMap, const Transform& lightView, const Transform& lightProj) const
+{
     m_CubeShader.bind();
     m_CubeShader.setUniform("viewMatrix", view);
     m_CubeShader.setUniform("projectionMatrix", projection);
+    m_CubeShader.setTextureUniform(shadowMap, 1, "shadowMap");
+    m_CubeShader.setUniform("lightViewMatrix", lightView);
+    m_CubeShader.setUniform("lightProjectionMatrix", lightProj);
     m_CubeShader.setTextureUniform(m_SpriteSheetTexture, 0, "spriteSheet");
 
     m_MultiMesh.draw();

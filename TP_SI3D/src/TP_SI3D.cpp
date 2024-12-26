@@ -71,17 +71,14 @@ public:
         m_ShadowFBO.attachTexture(m_ShadowMap, FrameBuffer::TextureAttachment::Depth, 0);
 
         const auto& specs = m_Terrain.getSpecs();
-        float terrainSizeX = specs.chunkWidth * specs.chunkX * specs.cubeSize;
-        float terrainSizeY = specs.chunkWidth * specs.chunkY * specs.cubeSize;
-        float terrainSizeZ = specs.cubesHeight * specs.cubeSize;
-        m_TerrainCenter = Point(terrainSizeX / 2.f, terrainSizeY / 2.f, terrainSizeZ / 2.f);
-        m_camera.lookat(Point(0.f, 0.f, 0.f), Point(terrainSizeX, terrainSizeY, terrainSizeZ));
+        m_TerrainSizeX = specs.chunkWidth * specs.chunkX * specs.cubeSize;
+        m_TerrainSizeY = specs.chunkWidth * specs.chunkY * specs.cubeSize;
+        m_TerrainSizeZ = specs.cubesHeight * specs.cubeSize;
+        m_TerrainCenter = Point(m_TerrainSizeX / 2.f, m_TerrainSizeY / 2.f, m_TerrainSizeZ / 2.f);
+        float maxVal = std::max(m_TerrainSizeX, std::max(m_TerrainSizeY, m_TerrainSizeZ));
+        m_camera.lookat(Point(0.f, 0.f, 0.f), Point(m_TerrainSizeX, m_TerrainSizeY, m_TerrainSizeZ));
         
-        Transform translation = Translation(-Vector(m_TerrainCenter));
-        Transform rotation = RotationX(-90.f);
-        m_LightPos = Point(terrainSizeX / 2.f, terrainSizeY / 2.f, terrainSizeZ);
-        m_LightView = translation * rotation;
-        m_LightProjection = Ortho(-terrainSizeX, terrainSizeX, -terrainSizeY, terrainSizeY, 0.f, terrainSizeZ * 2.f);
+        m_LightProjection = Ortho(-maxVal, maxVal, -maxVal, maxVal, -maxVal, maxVal);
 
         m_DebugLightCube = make_frustum();
 
@@ -159,20 +156,21 @@ public:
         glViewport(0, 0, window_width(), window_height());
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
-        m_Terrain.draw(m_camera.view(), m_camera.projection());
+        m_Terrain.draw(m_camera.view(), m_camera.projection(), m_ShadowMap, m_LightView, m_LightProjection);
 
         // Debug : affichage d'une boite pour voir la lumiere
-        draw(m_DebugLightCube, Inverse(m_LightProjection * m_LightView), m_camera);        
+        draw(m_DebugLightCube, Inverse(m_LightProjection * m_LightView), m_camera);
+
+        
         
         return 1;
     }
 
     void updateLightView()
-    {
-        const auto& specs = m_Terrain.getSpecs();
-        float terrainSizeX = specs.chunkWidth * specs.chunkX * specs.cubeSize;
-        float terrainSizeY = specs.chunkWidth * specs.chunkY * specs.cubeSize;
-        float terrainSizeZ = specs.cubesHeight * specs.cubeSize;
+    {        
+        Transform translation = Translation(Vector(m_TerrainCenter));
+        Transform rotation = RotationX(90.f + global_time() / 1000.f * 5.f);
+        m_LightView = Inverse(translation * rotation);
     }
 
 protected:
@@ -182,8 +180,9 @@ protected:
     FrameBuffer m_ShadowFBO, m_WindowFBO;
     Texture2D m_ShadowMap;
 
-    Point m_LightPos, m_TerrainCenter;
-    Transform m_LightView, m_LightProjection, m_LightViewport;
+    Point m_TerrainCenter;
+    float m_TerrainSizeX, m_TerrainSizeY, m_TerrainSizeZ;
+    Transform m_LightView, m_LightProjection;
 
     Mesh m_DebugLightCube;
 
