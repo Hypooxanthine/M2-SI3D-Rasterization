@@ -34,8 +34,7 @@ public:
 
     const TerrainSpecs& getSpecs() const { return m_Specs; }
 
-    void draw(const Transform& view, const Transform& projection) const;
-    void draw(const Transform& view, const Transform& projection, const Texture2D& shadowMap, const Transform& lightView, const Transform& lightProj) const;
+    void draw() const;
     void cullChunks(const Transform& view, const Transform& projection);
     void stopCulling();
 
@@ -47,10 +46,6 @@ private:
     TerrainSpecs m_Specs;
     
     Image m_HeightMap;
-
-    Texture2D m_SpriteSheetTexture;
-
-    Shader m_CubeShader, m_CubeShadowBuilder;
 
     std::vector<Mesh> m_Meshes;
     ChunkManager m_ChunkManager;

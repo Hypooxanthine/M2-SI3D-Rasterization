@@ -47,6 +47,8 @@ in vec3 v_normal;
 in vec3 v_position;
 in vec4 v_lightSpacePos;
 
+uniform vec3 lightDir;
+uniform vec4 lightColor;
 uniform mat4 viewMatrix;
 uniform sampler2D spriteSheet;
 uniform sampler2D shadowMap;
@@ -61,7 +63,7 @@ float computeShadow()
     float minDepth = texture(shadowMap, projSpacePos.xy).x;
     float fragDepth = projSpacePos.z;
     
-    return fragDepth > (minDepth + 0.007) ? 1.0 : 0.0;
+    return fragDepth > (minDepth + 0.0025) ? 1.0 : 0.0;
     #endif
 
     #if 0
@@ -76,12 +78,8 @@ void main( )
     vec3 viewDir = normalize(v_position - viewPosition);
     const vec3 lightDir = -normalize(vec3(2.0, -1.0, 1.0));
     float diffuseLightFactor = max(0.0, dot(lightDir, normalize(v_normal)));
-    vec3 lightColor = vec3(1.0, 1.0, 1.0);
     vec3 baseColor = texture(spriteSheet, v_texcoord).xyz;
     float shadow = computeShadow();
-    if (shadow == 1.0)
-        fragment_color = vec4(0.1 * diffuseLightFactor * lightColor * baseColor, 1.0);
-    else
-        fragment_color = vec4(diffuseLightFactor * lightColor * baseColor, 1.0);
+    fragment_color = vec4((1.0 - shadow * 0.9) * diffuseLightFactor * lightColor.xyz * baseColor, 1.0);
 }
 #endif

@@ -74,13 +74,25 @@ public:
         m_TerrainSizeX = specs.chunkWidth * specs.chunkX * specs.cubeSize;
         m_TerrainSizeY = specs.chunkWidth * specs.chunkY * specs.cubeSize;
         m_TerrainSizeZ = specs.cubesHeight * specs.cubeSize;
-        m_TerrainCenter = Point(m_TerrainSizeX / 2.f, m_TerrainSizeY / 2.f, m_TerrainSizeZ / 2.f);
-        float maxVal = std::max(m_TerrainSizeX, std::max(m_TerrainSizeY, m_TerrainSizeZ));
-        m_camera.lookat(Point(0.f, 0.f, 0.f), Point(m_TerrainSizeX, m_TerrainSizeY, m_TerrainSizeZ));
-        
+        m_TerrainCenter = Point(m_TerrainSizeX / 2.f, m_TerrainSizeZ / 2.f, m_TerrainSizeY / 2.f);
+        float maxVal = std::max(m_TerrainSizeX, std::max(m_TerrainSizeY, m_TerrainSizeZ)) / 2.f;
         m_LightProjection = Ortho(-maxVal, maxVal, -maxVal, maxVal, -maxVal, maxVal);
+        
+        m_camera.lookat(Point(0.f, 0.f, 0.f), Point(m_TerrainSizeX, m_TerrainSizeY, m_TerrainSizeZ));
+
+        updateLightView(0.f);
 
         m_DebugLightCube = make_frustum();
+
+        auto imageData = read_image_data("data/CubeWorld/Blocks_PixelArt.png");
+        ASSERT(imageData.size > 0, "Could not load data/CubeWorld/Blocks_PixelArt.png");
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        ASSERT(m_SpriteSheetTexture.loadFromImage(imageData), "Could not load spritesheet from image data");
+    
+        ASSERT(m_CubeShader.load("data/shaders/TP_SI3D/Cube.glsl"), "Could not load data/shaders/TP_SI3D/Cube.glsl");
+        ASSERT(m_CubeShadowBuilder.load("data/shaders/TP_SI3D/CubeShadowBuilder.glsl"), "Could not load data/shaders/TP_SI3D/CubeShadowBuilder.glsl");
 
         return 0;   // pas d'erreur, sinon renvoyer -1
     }
@@ -133,9 +145,19 @@ public:
             }
         }
 
-        /* PARTIE GESTION DATA */
+        if(key_state('a'))
+        {
+            clear_key_state('a');
+            updateLightView(-5.f);
+        }
 
-        updateLightView();
+        if(key_state('e'))
+        {
+            clear_key_state('e');
+            updateLightView(5.f);
+        }
+
+        /* PARTIE GESTION DATA */
 
         if (m_CullChunks)
             m_Terrain.cullChunks(m_camera.view(), m_camera.projection());
@@ -143,46 +165,79 @@ public:
         /* PARTIE RENDU */
 
         // Première passe : shadow map
-
-        m_ShadowFBO.bind();
-        glViewport(0, 0, m_ShadowMap.getWidth(), m_ShadowMap.getHeight());
-        glClear(GL_DEPTH_BUFFER_BIT);
         
-        m_Terrain.draw(m_LightView, m_LightProjection);
+        updateShadowMap();
 
         // Deuxième passe : rendu de la scène
 
         m_WindowFBO.bind();
         glViewport(0, 0, window_width(), window_height());
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            
+        m_CubeShader.bind();
+        m_CubeShader.setUniform("viewMatrix", m_camera.view());
+        m_CubeShader.setUniform("projectionMatrix", m_camera.projection());
+        m_CubeShader.setTextureUniform(m_ShadowMap, 1, "shadowMap");
+        m_CubeShader.setUniform("lightViewMatrix", m_LightView);
+        m_CubeShader.setUniform("lightProjectionMatrix", m_LightProjection);
+        m_CubeShader.setUniform("lightDir", m_LightDir);
+        m_CubeShader.setUniform("lightColor", White());
+        m_CubeShader.setTextureUniform(m_SpriteSheetTexture, 0, "spriteSheet");
         
-        m_Terrain.draw(m_camera.view(), m_camera.projection(), m_ShadowMap, m_LightView, m_LightProjection);
+        m_Terrain.draw();
 
         // Debug : affichage d'une boite pour voir la lumiere
         draw(m_DebugLightCube, Inverse(m_LightProjection * m_LightView), m_camera);
 
-        
-        
         return 1;
     }
 
-    void updateLightView()
-    {        
+    void updateLightView(float rot)
+    {
+        static float rotAcc = 0.f;
+        rotAcc += rot;
         Transform translation = Translation(Vector(m_TerrainCenter));
-        Transform rotation = RotationX(90.f + global_time() / 1000.f * 5.f);
+        Transform rotation = RotationX(-90.f + rotAcc);
         m_LightView = Inverse(translation * rotation);
+        m_LightDir = m_LightView(Vector(0.f, 0.f, -1.f));
+
+        m_ShadowMapDirty = true;
+    }
+
+    void updateShadowMap()
+    {
+        if (m_ShadowMapDirty == false)
+            return;
+
+        m_ShadowFBO.bind();
+        glViewport(0, 0, m_ShadowMap.getWidth(), m_ShadowMap.getHeight());
+        glClear(GL_DEPTH_BUFFER_BIT);
+
+        m_CubeShadowBuilder.bind();
+        m_CubeShadowBuilder.setUniform("viewMatrix", m_LightView);
+        m_CubeShadowBuilder.setUniform("projectionMatrix", m_LightProjection);
+        
+        m_Terrain.draw();
+
+        m_ShadowMapDirty = false;
     }
 
 protected:
     Orbiter m_camera;
     Terrain m_Terrain;
 
+    Texture2D m_SpriteSheetTexture;
+
+    Shader m_CubeShader, m_CubeShadowBuilder;
+
     FrameBuffer m_ShadowFBO, m_WindowFBO;
     Texture2D m_ShadowMap;
+    bool m_ShadowMapDirty = true;
 
     Point m_TerrainCenter;
     float m_TerrainSizeX, m_TerrainSizeY, m_TerrainSizeZ;
     Transform m_LightView, m_LightProjection;
+    Vector m_LightDir;
 
     Mesh m_DebugLightCube;
 
