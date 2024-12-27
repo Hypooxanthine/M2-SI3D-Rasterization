@@ -13,5 +13,7 @@ data/sponza/**
 !data/CubeWorld/**
 
 *.workspace
+.vscode/
+.vscode/**
 
 Makefile
