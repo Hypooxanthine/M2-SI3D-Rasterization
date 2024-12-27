@@ -36,7 +36,7 @@ Je stocke dans une map ayant pour clé l'indice des meshes, et pour valeur un ve
 
 J'utilise un SSBO qui va stocker la concaténation des matrices de modèle des cubes, pour chaque chunk et chaque type de bloc.
 
-D'autre part, j'ai créé une classe MultiMesh qui se charge de la cohérence des données pour l'utilisation de glMultiDrawElementsIndirect. Dans cette classe, je vais avoir un buffer pour les vertice, un buffer pour les indices, et un buffer pour les commandes. Le multimesh permet d'ajouter séquentiellement plusieurs meshes aux deux premiers buffers, tout en conservant les tailles / les indices nécessaires dans les tableaux pour s'y retrouver avec les commandes. Un VAO est paramétré dans updateBuffers.
+D'autre part, j'ai créé une classe MultiMesh qui se charge de la cohérence des données pour l'utilisation de glMultiDrawElementsIndirect. Dans cette classe, je vais avoir un buffer pour les vertice, un buffer pour les indices, et un buffer pour les commandes. Un vertex contient une position, une coordonnée de texture et une normale. Le multimesh permet d'ajouter séquentiellement plusieurs meshes aux deux premiers buffers, tout en conservant les tailles / les indices nécessaires dans les tableaux pour s'y retrouver avec les commandes. Un VAO est paramétré dans updateBuffers.
 
 Ensuite, on peut créer ou modifier des commandes. Pour créer une commande par exemple, il faut un indice de mesh, combien d'instances doivent être dessinées, et quel est son baseInstance. Ce dernier paramètre est crucial car c'est lui qui permettra de se repérer dans le SSBO, dans le [vertex shader](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/data/shaders/TP_SI3D/CubeShadowBuilder.glsl).
 
@@ -75,4 +75,10 @@ Côté application, tout est dans [la classe principale](https://github.com/Hypo
 
 Il faut d'abord définir le volume "de vue" de la lumière. Ma lumière est directionnelle, donc j'utilise une projection orthographique. Je prends les dimensions max du terrain pour largeur, hauteur et profondeur. De cette manière, puisque je veux faire simplement tourner la lumière directionnelle autour de la scène (selon l'axe X uniquement), toute la scène devrait plus ou moins pouvoir être ombragée si nécessaire (les bords du terrains ont une hauteur assez faible, donc cela convient).
 
-Pour la matrice de vue, elle change quand on appuie sur A ou E.
+Pour la matrice de vue, elle change quand on appuie sur A ou E. C'est une rotation suivie d'une translation pour que le volume de lumière soit centré sur le terrain.
+
+Dans le pipeline, d'abord je dessine la scène avec un simple shader qui a pour seul objectif de stocker la profondeur dans le framebuffer. Ensuite, une deuxième passe sur le framebuffer par défaut va permettre d'attribuer leur vraie couleur aux pixels. Je passe la carte de profondeurs de la première passe au shader de la seconde passe pour vérifier si un fragment est à l'ombre ou non.
+
+C'est dans le [deuxième shader](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/data/shaders/TP_SI3D/Cube.glsl) que la couleur d'un fragment est déterminée. Si un fragment est exposé à la lumière, je fais un simple calcul de lumière diffuse où la couleur de base est tirée de la feuille de sprites. S'il est à l'ombre, je divise par 10 son intensité.
+
+Pour déterminer qu'un fragment est à l'ombre, je considère le fragment dans le repère projectif de la lumière. Je normalise les valeurs pour passer vers [0, 1]³, et les coordonnées xy du fragment dans cet espace sont les coordonnées de textures qui m'intéressent pour ce fragment. Mais comme le pixel de la shadowmap a été calculé pour un fragment différent (même si très proche dans l'espace), il y a beaucoup de bruit, que j'ai réglé par l'ajout d'un biais de 0.0025, trouvé empiriquement pour obtenir un résultat visuellement agréable sur cette scène.

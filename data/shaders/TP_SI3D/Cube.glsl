@@ -76,8 +76,8 @@ void main( )
 {
     vec3 viewPosition = -vec3((viewMatrix) * vec4(0, 0, 0, 1));
     vec3 viewDir = normalize(v_position - viewPosition);
-    const vec3 lightDir = -normalize(vec3(2.0, -1.0, 1.0));
-    float diffuseLightFactor = max(0.0, dot(lightDir, normalize(v_normal)));
+    const vec3 light = normalize(lightDir);
+    float diffuseLightFactor = max(0.0, dot(light, normalize(v_normal)));
     vec3 baseColor = texture(spriteSheet, v_texcoord).xyz;
     float shadow = computeShadow();
     fragment_color = vec4((1.0 - shadow * 0.9) * diffuseLightFactor * lightColor.xyz * baseColor, 1.0);
