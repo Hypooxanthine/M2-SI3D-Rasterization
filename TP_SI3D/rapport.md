@@ -6,6 +6,12 @@
 
 [D'autres fichiers source que j'ai créés, communs à tous les projets SI3D / CG](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/tree/master/src/MyThings)
 
+Pour compiler et lancer, depuis le répertoire racine de gkit : 
+```shell
+premake4 gmake
+./run.sh
+```
+
 ## Quelques classes d'abstraction
 
 J'ai créé quelques classes pour me faciliter la tâche, qui servent à abstraire certains objets OpenGL en version "POO". Je trouvais ça plus lisible et surtout je n'avais plus besoin de m'occuper de la libération des ressources (destructeurs des classes).
@@ -28,20 +34,38 @@ Je stocke dans une map ayant pour clé l'indice des meshes, et pour valeur un ve
 
 ### Transfert des données à la carte graphique
 
-J'utilise un SSBO qui va stocker la concaténation, pour chaque chunk et chaque type de bloc, des matrices de modèle des cubes.
+J'utilise un SSBO qui va stocker la concaténation des matrices de modèle des cubes, pour chaque chunk et chaque type de bloc.
 
 D'autre part, j'ai créé une classe MultiMesh qui se charge de la cohérence des données pour l'utilisation de glMultiDrawElementsIndirect. Dans cette classe, je vais avoir un buffer pour les vertice, un buffer pour les indices, et un buffer pour les commandes. Le multimesh permet d'ajouter séquentiellement plusieurs meshes aux deux premiers buffers, tout en conservant les tailles / les indices nécessaires dans les tableaux pour s'y retrouver avec les commandes. Un VAO est paramétré dans updateBuffers.
 
-Ensuite, on peut créer ou modifier des commandes. Pour créer une commande par exemple, il faut un indice de mesh, combien d'instances doivent être dessinées, et quel est son baseInstance. Ce dernier paramètre est crucial car c'est lui qui permettra de se repérer dans le SSBO, dans le vertex shader.
+Ensuite, on peut créer ou modifier des commandes. Pour créer une commande par exemple, il faut un indice de mesh, combien d'instances doivent être dessinées, et quel est son baseInstance. Ce dernier paramètre est crucial car c'est lui qui permettra de se repérer dans le SSBO, dans le [vertex shader](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/data/shaders/TP_SI3D/CubeShadowBuilder.glsl).
 
-Dans mon implémentation, j'ai choisi l'approche de ne pas supprimer une commande, mais plutôt de la modifier en fixant à zéro son nombre d'instances. Visuellement ça ne change rien, et ça me permet de ne pas recréer potentiellement à chaque frame tout le command buffer et de le renvoyer à la carte graphique. J'ai supposé que cela prenait trop de temps.
+Dans mon implémentation, j'ai choisi l'approche de ne pas supprimer une commande, mais plutôt de la modifier en fixant à zéro son nombre d'instances. Visuellement ça ne change rien, et ça me permet de ne pas recréer potentiellement à chaque frame tout le command buffer et de le renvoyer à la carte graphique. J'ai supposé que cela prendrait moins de temps avec l'implémentation que j'ai choisie.
 
 ## Optimisation : frustum culling
 
+### Détails
+
 Les algorithmes se trouvent dans [ce fichier](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/TP_SI3D/include/FrustumCulling.h).
 
-J'ai (re)créé quelques structures de données, notamment le Vec4 (le vec4 de gkit ne fournit par les opérateurs de base), le plan, le frustum et le AABB. Un AABB pourrait être converti en Frustum sans perte d'information, mais l'inverse est faux. Je me suis servi du fait qu'on ait un AABB en world space pour simplifier les calculs.
+Contrôles : la touche C permet d'activer ou de désactiver le frustum culling.
 
-En effet, dans le world space, je vais vérifier s'il existe un plan du AABB qui sépare tous les points du frustum.
+### Implémentation
 
-Normalement, j'aurais dû vérifier dans l'autre sens : dans l'espace projectif, le frustum de camera devient un AABB (de dimensions [-1, 1]^3), et refaire les mêmes calculs.
+En terme de structures de données, c'est assez léger : juste un AABB contenant un first et un second. Chaque chunk peut retourner son propre englobant et c'est ce qui permettra de faire le frustum culling pour tous les chunks.
+
+Dans l'espace monde, on a un AABB et un frustum. On va extraire les 8 coins du frustum, et regarder si une des 6 faces du AABB peut entièrement séparer le AABB du frustum. Le test est rapide car on a simplement besoin de vérifier des inégalités sur chaque axe. Si une des faces du AABB peut entièrement séparer le AABB du frustum, alors on souhaitera ne pas afficher le chunk. Sinon, on passe en espace projectif :
+- Le AABB devient le cube unitaire ([-1, 1]³)
+- Le frustum de vue devient le aabb déformé par les matrices VP
+On se trouve dans la même situation : un AABB contre 8 sommets. Donc on refait exactement le même test. Si aucun plan n'est trouvé, alors on affichera le chunk. Sinon, on le cachera (càd: on fixera son nombre d'instances à zéro).
+
+## Ombrage
+
+### Détails
+
+J'ai dû créer un shader pour la [construction de la shadowmap](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/data/shaders/TP_SI3D/CubeShadowBuilder.glsl), et modifier le shader [affichant les cubes](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/data/shaders/TP_SI3D/Cube.glsl).
+
+Contrôles : les touches A et E permettent de changer l'inclinaison de la lumière directionnelle.
+
+### Implémentation
+
