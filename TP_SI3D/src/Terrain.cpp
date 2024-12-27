@@ -87,7 +87,7 @@ void Terrain::cullChunks(const Transform& view, const Transform& projection)
         auto offset = m_ChunkManager.getChunkFirstInstanceIndice().at(i);
         auto meshId = m_MultiMesh.getCommandMeshIndex(i);
 
-        bool show = AabbCrossesFrustum(chunk.getboundingBox(), ViewFrustum(viewProj));
+        bool show = AabbCrossesFrustum(chunk.getboundingBox(), viewProj);
 
         for (auto&& [meshId, transforms] : chunk.getMeshTransforms())
         {
