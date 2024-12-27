@@ -69,3 +69,10 @@ Contrôles : les touches A et E permettent de changer l'inclinaison de la lumiè
 
 ### Implémentation
 
+J'ai créé et utilisé les classes [FrameBuffer](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/src/MyThings/FrameBuffer.h) et [Texture2D](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/src/MyThings/Texture2D.h).
+
+Côté application, tout est dans [la classe principale](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/TP_SI3D/src/TP_SI3D.cpp).
+
+Il faut d'abord définir le volume "de vue" de la lumière. Ma lumière est directionnelle, donc j'utilise une projection orthographique. Je prends les dimensions max du terrain pour largeur, hauteur et profondeur. De cette manière, puisque je veux faire simplement tourner la lumière directionnelle autour de la scène (selon l'axe X uniquement), toute la scène devrait plus ou moins pouvoir être ombragée si nécessaire (les bords du terrains ont une hauteur assez faible, donc cela convient).
+
+Pour la matrice de vue, elle change quand on appuie sur A ou E.
