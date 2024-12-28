@@ -17,7 +17,7 @@ premake4 gmake
 ![Screenshot](screenshots/shadowmap_largescale.png)
 ![Screenshot](screenshots/shadowmap_shortscale.png)
 
-## Quelques classes d'abstraction
+## Abstraction
 
 J'ai créé quelques classes pour me faciliter la tâche, qui servent à abstraire certains objets OpenGL en version "POO". Je trouvais ça plus lisible et surtout je n'avais plus besoin de m'occuper de la libération des ressources (destructeurs des classes).
 Parmis les plus utiles dans ce TP :
@@ -25,6 +25,10 @@ Parmis les plus utiles dans ce TP :
 - [Vertex arrays](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/src/MyThings/VertexArray.h)
 - [Multimesh](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/src/MyThings/MultiMesh.h) et son [draw indirect buffer](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/src/MyThings/DrawIndirectBO.h)
 - [Frame buffer](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/src/MyThings/FrameBuffer.h)
+
+La plupart des valeurs de l'application sont paramétrables, par exemple le nombre de chunks en X ou Y, la largeur d'un chunk (en blocs), la hauteur max du terrain (en blocs), tout ceci est dans le [header du terrain](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/TP_SI3D/include/Terrain.h). La hauteur par défaut est calculée empiriquement selon les deux autres dimensions, mais on peut quand même la modifier.
+
+Le fichier [AppParameters.h](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/TP_SI3D/include/AppParameters.h) n'est pas vraiment fait pour être modifié au final, à part le define pour montrer ou non le nombre de chunks affichés en temps réel dans la console (cela n'innonde pas la console, une ligne s'affiche seulement quand le nombre de chunks affichés varie). On pourra éventuellement y modifier les chemins d'accès aux fichiers .obj des cubes, si besoin.
 
 ## Heighmap vers géométrie
 
