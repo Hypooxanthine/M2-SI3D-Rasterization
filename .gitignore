@@ -13,6 +13,9 @@ data/dragon.obj
 data/rungholt/**
 data/sponza/**
 !data/CubeWorld/**
+!bin/TP_SI3D
+!bin/TP2_SI3D
+!bin/TP_CG
 
 *.workspace
 .vscode/
