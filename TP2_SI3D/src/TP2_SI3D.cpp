@@ -115,6 +115,11 @@ Hit intersect(const Point& o, const Point& e)
     return hit;
 }
 
+Hit intersect(const Point& o, const Vector& d, const float tmax)
+{
+    return intersect(o, o + d * tmax);
+}
+
 Vector Reflect(const Vector& v, const Vector& n)
 {
     return v - 2.f * dot(v, n) * n;
@@ -251,7 +256,7 @@ int main( const int argc, const char **argv )
     // recupere les transformations pour generer les rayons
     camera.projection(image.width(), image.height(), 45);
     Transform model= Identity();
-    Transform view= Inverse(Translation(0.f, 0.f, 1.f)) *  camera.view();
+    Transform view= camera.view();
     Transform projection= camera.projection();
     Transform viewport= camera.viewport();
     Transform inv= Inverse(viewport * projection * view * model);
@@ -269,31 +274,14 @@ auto start= std::chrono::high_resolution_clock::now();
         
         // calculer les intersections avec tous les triangles
         Hit hit = intersect(origine, extremite);
-        
-    #if 0
-        if(hit)
-            // coordonnees barycentriques de l'intersection
-            image(x, y)= Color(1 - hit.u - hit.v, hit.u, hit.v);
-    #endif
 
-    #if 0
-        if(hit)
-        {
-            Vector n= normal(mesh, hit);
-            // normale interpolee a l'intersection
-            image(x, y)= Color(std::abs(n.x), std::abs(n.y), std::abs(n.z));
-        }
-    #endif
-
-    #if 1
         if(hit)
         {
             Vector n = normal(mesh, hit);
             // Couleur par l'estimateur de Monte-Carlo
             const Point p = ray.o + hit.t * ray.d;
-            image(x, y) = Lr(p + 0.0001f * n, -normalize(ray.d), n, rng, 16, hit.triangle_id);
+            image(x, y) = Lr(p + 0.0001f * n, -normalize(ray.d), n, rng, 512, hit.triangle_id);
         }
-    #endif
     }
 
 auto stop= std::chrono::high_resolution_clock::now();
