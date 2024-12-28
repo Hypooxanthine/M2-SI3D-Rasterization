@@ -12,6 +12,11 @@ premake4 gmake
 ./run.sh
 ```
 
+## Screenshots
+
+![Screenshot](screenshots/shadowmap_largescale.png)
+![Screenshot](screenshots/shadowmap_shortscale.png)
+
 ## Quelques classes d'abstraction
 
 J'ai créé quelques classes pour me faciliter la tâche, qui servent à abstraire certains objets OpenGL en version "POO". Je trouvais ça plus lisible et surtout je n'avais plus besoin de m'occuper de la libération des ressources (destructeurs des classes).
