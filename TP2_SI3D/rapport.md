@@ -14,4 +14,4 @@ premake4 gmake
 
 ![Screenshot](screenshots/rendu512.png)
 
-## 
+## [en cours de rédaction]
