@@ -199,7 +199,7 @@ public:
         Transform translation = Translation(Vector(m_TerrainCenter));
         Transform rotation = RotationX(-90.f + rotAcc);
         m_LightView = Inverse(translation * rotation);
-        m_LightDir = m_LightView(Vector(0.f, 0.f, -1.f));
+        m_LightDir = normalize(m_LightView(Vector(0.f, 0.f, 1.f)));
 
         m_ShadowMapDirty = true;
     }

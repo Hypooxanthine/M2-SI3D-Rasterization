@@ -30,7 +30,16 @@ uniform int frameWidth;
 uniform int frameHeight;
 uniform vec3 cameraPos;
 
-uniform uint step;
+// Pour savoir quels sont les pixels dont on cherche la couleur
+uniform uint fillMask;
+
+// Pour chaque pixel dont on cherche la couleur, ces variables permettront
+// de savoir quels sont les 4 pixels à utiliser pour interpoler la couleur
+// (s'il est décidé d'interpoler)
+uniform ivec2 dA;
+uniform ivec2 dB;
+uniform ivec2 dC;
+uniform ivec2 dD;
 
 layout(binding = 0, rgba32f) uniform image2D outputTexture;
 
@@ -99,16 +108,43 @@ float gray(vec3 color)
     return 0.21f * color.r + 0.71f * color.g + 0.08f * color.b;
 }
 
+float variance(vec3 a, vec3 b, vec3 c, vec3 d)
+{
+    vec3 s = (a + b + c + d) / 4.0;
+    vec3 ss = (a * a + b * b + c * c + d * d) / 4.0;
+    return gray(ss - s * s);
+}
+
+bool shouldComputePixel()
+{
+    vec3 a = texelFetch(outputTexture, pixel + dA, 0).xyz;
+    vec3 b = texelFetch(outputTexture, pixel + dB, 0).xyz;
+    vec3 c = texelFetch(outputTexture, pixel + dC, 0).xyz;
+    vec3 d = texelFetch(outputTexture, pixel + dD, 0).xyz;
+
+    return variance(a, b, c, d) > 0.01;
+}
+
 void main( )
 {
-    pixel = ivec2(gl_GlobalInvocationID.xy);
-    if (pixel.x >= frameWidth || pixel.y >= frameHeight)
-    {
-        return;
-    }
+    // pixel = ivec2(gl_GlobalInvocationID.xy);
+    // if (pixel.x >= frameWidth || pixel.y >= frameHeight)
+    // {
+    //     return;
+    // }
 
-    if (isPixelComputed())
-        return;
+    // if (isPixelComputed())
+    //     return;
+
+    ivec2 tile = ivec2(gl_GlobalInvocationID.xy);
+
+    for (int i = 0; i < 4 * 4; i++)
+    {
+        if (fillMask & (1 << i))
+        {
+            pixel = tile * ivec2(4, 4) + ivec2(i % 4, i / 4);
+        }
+    }
 
     position_matid = texelFetch(g_position_matid, pixel, 0);
         matid = position_matid.w;
