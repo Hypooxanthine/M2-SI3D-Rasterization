@@ -195,6 +195,11 @@ void program_uniform( const GLuint program, const char *uniform, const std::vect
     glUniformMatrix4fv( location(program, uniform, v.size()), v.size(), GL_TRUE, v[0].data() );
 }
 
+void program_uniform( const GLuint program, const char *uniform, const std::array<int, 2>& v)
+{
+    glUniform2iv( location(program, uniform), 1, v.data() );
+}
+
 void program_use_texture( const GLuint program, const char *uniform, const int unit, const GLuint texture, const GLuint sampler, const GLenum target )
 {
     // verifie que l'uniform existe

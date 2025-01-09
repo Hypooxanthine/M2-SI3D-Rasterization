@@ -85,7 +85,12 @@ vec3 computePixelColor(ivec2 pixel, vec4 position_matid)
 
 vec3 interpolatePixelColor(ivec2 pixel)
 {
-    return vec3(0.f, 0.f, 0.f);
+    vec3 a = imageLoad(outputTexture, pixel + dA).xyz;
+    vec3 b = imageLoad(outputTexture, pixel + dB).xyz;
+    vec3 c = imageLoad(outputTexture, pixel + dC).xyz;
+    vec3 d = imageLoad(outputTexture, pixel + dD).xyz;
+
+    return (a + b + c + d) / 4.0;
 }
 
 bool isPixelComputed()
@@ -102,7 +107,7 @@ float variance(vec3 a, vec3 b, vec3 c, vec3 d)
 {
     vec3 s = (a + b + c + d) / 4.0;
     vec3 ss = (a * a + b * b + c * c + d * d) / 4.0;
-    return gray(ss - s * s);
+    return gray(abs(ss - s * s));
 }
 
 bool shouldComputePixel(ivec2 px)
@@ -111,9 +116,8 @@ bool shouldComputePixel(ivec2 px)
     vec3 b = imageLoad(outputTexture, px + dB).xyz;
     vec3 c = imageLoad(outputTexture, px + dC).xyz;
     vec3 d = imageLoad(outputTexture, px + dD).xyz;
-
-    return true;
-    return variance(a, b, c, d) > 0.01;
+    
+    return variance(a, b, c, d) > 0.0001;
 }
 
 void main( )
@@ -143,8 +147,10 @@ void main( )
                 color = computePixelColor(px, position_matid);
             else
                 color = interpolatePixelColor(px);
+                // color = white;
 
             // color = black;
+            // color = computePixelColor(px, position_matid);
 
             imageStore(outputTexture, px, vec4(color, 1.0));
         }

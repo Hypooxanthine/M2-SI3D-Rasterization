@@ -4,6 +4,7 @@
 
 #include <string>
 #include <vector>
+#include <array>
 
 #include "glcore.h"
 
@@ -59,6 +60,8 @@ void program_uniform( const GLuint program, const char *uniform, const std::vect
 void program_uniform( const GLuint program, const char *uniform, const std::vector<Color>& c );
 //! affecte un tableau de valeurs a un uniform du shader program. 
 void program_uniform( const GLuint program, const char *uniform, const std::vector<Transform>& v );
+//! affecte un ivec2 a un uniform du shader program.
+void program_uniform( const GLuint program, const char *uniform, const std::array<int, 2>& v );
 
 //! configure le pipeline et le shader program pour utiliser une texture, et des parametres de filtrage, eventuellement.
 void program_use_texture( const GLuint program, const char *uniform, const int unit, const GLuint texture, const GLuint sampler= 0, const GLenum target = GL_TEXTURE_2D );

@@ -135,6 +135,18 @@ public:
         glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
 
+
+        // Initialisation des vecteurs pour la prise en compte des pixels pour l'interpolation
+        dAdiag = { -1,  1 }; dAdiag2 = { -2,  2 };
+        dBdiag = {  1,  1 }; dBdiag2 = {  2,  2 };
+        dCdiag = {  1, -1 }; dCdiag2 = {  2, -2 };
+        dDdiag = { -1, -1 }; dDdiag2 = { -2, -2 };
+
+        dAortho = { -1,  0 }; dAortho2 = { -2,  0 };
+        dBortho = {  0,  1 }; dBortho2 = {  0,  2 };
+        dCortho = {  1,  0 }; dCortho2 = {  2,  0 };
+        dDortho = {  0, -1 }; dDortho2 = {  0, -2 };
+
         return 0;   // ras, pas d'erreur
     }
     
@@ -249,34 +261,34 @@ public:
         setComputeShaderData(m_SecondPassColorShader, GL_READ_WRITE);
 
         m_SecondPassColorShader.setUniform("fillMask", 0b0000010000000000);
-        m_SecondPassColorShader.setUniform("dA", std::vector<int>{ -2,  2 });
-        m_SecondPassColorShader.setUniform("dB", std::vector<int>{  2,  2 });
-        m_SecondPassColorShader.setUniform("dC", std::vector<int>{  2, -2 });
-        m_SecondPassColorShader.setUniform("dD", std::vector<int>{ -2,  2 });
+        m_SecondPassColorShader.setUniform("dA", dAdiag2);
+        m_SecondPassColorShader.setUniform("dB", dBdiag2);
+        m_SecondPassColorShader.setUniform("dC", dCdiag2);
+        m_SecondPassColorShader.setUniform("dD", dDdiag2);
 
         m_SecondPassColorShader.dispatch(window_width() / 5, window_height() / 5, 1);
 
         m_SecondPassColorShader.setUniform("fillMask", 0b0000000100000100);
-        m_SecondPassColorShader.setUniform("dA", std::vector<int>{ -2,  0 });
-        m_SecondPassColorShader.setUniform("dB", std::vector<int>{  0,  2 });
-        m_SecondPassColorShader.setUniform("dC", std::vector<int>{  2,  0 });
-        m_SecondPassColorShader.setUniform("dD", std::vector<int>{  0, -2 });
+        m_SecondPassColorShader.setUniform("dA", dAortho2);
+        m_SecondPassColorShader.setUniform("dB", dBortho2);
+        m_SecondPassColorShader.setUniform("dC", dCortho2);
+        m_SecondPassColorShader.setUniform("dD", dDortho2);
 
         m_SecondPassColorShader.dispatch(window_width() / 5, window_height() / 5, 1);
 
         m_SecondPassColorShader.setUniform("fillMask", 0b1010000010100000);
-        m_SecondPassColorShader.setUniform("dA", std::vector<int>{ -1,  1 });
-        m_SecondPassColorShader.setUniform("dB", std::vector<int>{  1,  1 });
-        m_SecondPassColorShader.setUniform("dC", std::vector<int>{  1, -1 });
-        m_SecondPassColorShader.setUniform("dD", std::vector<int>{ -1,  1 });
+        m_SecondPassColorShader.setUniform("dA", dAdiag);
+        m_SecondPassColorShader.setUniform("dB", dBdiag);
+        m_SecondPassColorShader.setUniform("dC", dCdiag);
+        m_SecondPassColorShader.setUniform("dD", dDdiag);
 
         m_SecondPassColorShader.dispatch(window_width() / 5, window_height() / 5, 1);
 
         m_SecondPassColorShader.setUniform("fillMask", 0b0101101001011010);
-        m_SecondPassColorShader.setUniform("dA", std::vector<int>{ -1,  0 });
-        m_SecondPassColorShader.setUniform("dB", std::vector<int>{  0,  1 });
-        m_SecondPassColorShader.setUniform("dC", std::vector<int>{  1,  0 });
-        m_SecondPassColorShader.setUniform("dD", std::vector<int>{  0, -1 });
+        m_SecondPassColorShader.setUniform("dA", dAortho);
+        m_SecondPassColorShader.setUniform("dB", dBortho);
+        m_SecondPassColorShader.setUniform("dC", dCortho);
+        m_SecondPassColorShader.setUniform("dD", dDortho);
 
         m_SecondPassColorShader.dispatch(window_width() / 5, window_height() / 5, 1);
 
@@ -329,6 +341,8 @@ protected:
     ShaderStorageBufferObject lightsSSBO;
 
     std::pair<unsigned int, std::array<PointLight, 2>> lights;
+    std::array<int, 2> dAdiag, dBdiag, dCdiag, dDdiag, dAdiag2, dBdiag2, dCdiag2, dDdiag2;
+    std::array<int, 2> dAortho, dBortho, dCortho, dDortho, dAortho2, dBortho2, dCortho2, dDortho2;
 
     static constexpr size_t s_TexturesWidth = 4096, s_TexturesHeight = 4096;
     static constexpr std::string_view s_GShaderPath = "TP_CG/shaders/gshader.glsl";
