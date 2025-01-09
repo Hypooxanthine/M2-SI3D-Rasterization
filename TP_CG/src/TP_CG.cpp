@@ -233,10 +233,7 @@ public:
         // On envoie les données du gbuffer (entre autres) au compute shader
         setComputeShaderData(m_FirstPassColorsShader, GL_READ_ONLY);
 
-        m_FirstPassColorsShader.dispatch(
-            16, 16, 1,
-            window_width(), window_height(), 1
-        );        
+        m_FirstPassColorsShader.dispatch(window_width() / 5, window_height() / 5, 1);
 
         // On attend que le compute shader ait fini
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -251,10 +248,37 @@ public:
         // déjà calculés, pour les interpoler justement
         setComputeShaderData(m_SecondPassColorShader, GL_READ_WRITE);
 
-        m_SecondPassColorShader.dispatch(
-            16, 16, 1,
-            window_width(), window_height(), 1
-        );
+        m_SecondPassColorShader.setUniform("fillMask", 0b0000010000000000);
+        m_SecondPassColorShader.setUniform("dA", std::vector<int>{ -2,  2 });
+        m_SecondPassColorShader.setUniform("dB", std::vector<int>{  2,  2 });
+        m_SecondPassColorShader.setUniform("dC", std::vector<int>{  2, -2 });
+        m_SecondPassColorShader.setUniform("dD", std::vector<int>{ -2,  2 });
+
+        m_SecondPassColorShader.dispatch(window_width() / 5, window_height() / 5, 1);
+
+        m_SecondPassColorShader.setUniform("fillMask", 0b0000000100000100);
+        m_SecondPassColorShader.setUniform("dA", std::vector<int>{ -2,  0 });
+        m_SecondPassColorShader.setUniform("dB", std::vector<int>{  0,  2 });
+        m_SecondPassColorShader.setUniform("dC", std::vector<int>{  2,  0 });
+        m_SecondPassColorShader.setUniform("dD", std::vector<int>{  0, -2 });
+
+        m_SecondPassColorShader.dispatch(window_width() / 5, window_height() / 5, 1);
+
+        m_SecondPassColorShader.setUniform("fillMask", 0b1010000010100000);
+        m_SecondPassColorShader.setUniform("dA", std::vector<int>{ -1,  1 });
+        m_SecondPassColorShader.setUniform("dB", std::vector<int>{  1,  1 });
+        m_SecondPassColorShader.setUniform("dC", std::vector<int>{  1, -1 });
+        m_SecondPassColorShader.setUniform("dD", std::vector<int>{ -1,  1 });
+
+        m_SecondPassColorShader.dispatch(window_width() / 5, window_height() / 5, 1);
+
+        m_SecondPassColorShader.setUniform("fillMask", 0b0101101001011010);
+        m_SecondPassColorShader.setUniform("dA", std::vector<int>{ -1,  0 });
+        m_SecondPassColorShader.setUniform("dB", std::vector<int>{  0,  1 });
+        m_SecondPassColorShader.setUniform("dC", std::vector<int>{  1,  0 });
+        m_SecondPassColorShader.setUniform("dD", std::vector<int>{  0, -1 });
+
+        m_SecondPassColorShader.dispatch(window_width() / 5, window_height() / 5, 1);
 
         // On attend que le compute shader ait fini
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);

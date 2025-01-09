@@ -31,7 +31,7 @@ uniform int frameHeight;
 uniform vec3 cameraPos;
 
 // Pour savoir quels sont les pixels dont on cherche la couleur
-uniform uint fillMask;
+uniform int fillMask;
 
 // Pour chaque pixel dont on cherche la couleur, ces variables permettront
 // de savoir quels sont les 4 pixels à utiliser pour interpoler la couleur
@@ -43,26 +43,16 @@ uniform ivec2 dD;
 
 layout(binding = 0, rgba32f) uniform image2D outputTexture;
 
-ivec2 pixel;
-vec4 position_matid;
-    float matid;
-    vec3 p;
-vec3 normal;
-vec3 albedo;
-vec3 metallic_diffuse_shininess;
-    float metallic;
-    float diffuse;
-    float shininess;
-
-vec3 computePixelColor()
+vec3 computePixelColor(ivec2 pixel, vec4 position_matid)
 {
-        p = position_matid.xyz;
-    normal = texelFetch(g_normal, pixel, 0).xyz;
-    albedo = texelFetch(g_albedo, pixel, 0).xyz;
-    metallic_diffuse_shininess = texelFetch(g_metallic_diffuse_shininess, pixel, 0).xyz;
-        metallic = metallic_diffuse_shininess.x;
-        diffuse = metallic_diffuse_shininess.y;
-        shininess = metallic_diffuse_shininess.z;
+        float matid = position_matid.w;
+        vec3 p = position_matid.xyz;
+    vec3 normal = texelFetch(g_normal, pixel, 0).xyz;
+    vec3 albedo = texelFetch(g_albedo, pixel, 0).xyz;
+    vec3 metallic_diffuse_shininess = texelFetch(g_metallic_diffuse_shininess, pixel, 0).xyz;
+        float metallic = metallic_diffuse_shininess.x;
+        float diffuse = metallic_diffuse_shininess.y;
+        float shininess = metallic_diffuse_shininess.z;
 
     vec3 color = vec3(0.0);
     for (uint i = 0; i < pointLightCount; i++)
@@ -93,7 +83,7 @@ vec3 computePixelColor()
     return color;
 }
 
-vec3 interpolatePixelColor()
+vec3 interpolatePixelColor(ivec2 pixel)
 {
     return vec3(0.f, 0.f, 0.f);
 }
@@ -115,13 +105,14 @@ float variance(vec3 a, vec3 b, vec3 c, vec3 d)
     return gray(ss - s * s);
 }
 
-bool shouldComputePixel()
+bool shouldComputePixel(ivec2 px)
 {
-    vec3 a = texelFetch(outputTexture, pixel + dA, 0).xyz;
-    vec3 b = texelFetch(outputTexture, pixel + dB, 0).xyz;
-    vec3 c = texelFetch(outputTexture, pixel + dC, 0).xyz;
-    vec3 d = texelFetch(outputTexture, pixel + dD, 0).xyz;
+    vec3 a = imageLoad(outputTexture, px + dA).xyz;
+    vec3 b = imageLoad(outputTexture, px + dB).xyz;
+    vec3 c = imageLoad(outputTexture, px + dC).xyz;
+    vec3 d = imageLoad(outputTexture, px + dD).xyz;
 
+    return true;
     return variance(a, b, c, d) > 0.01;
 }
 
@@ -133,28 +124,31 @@ void main( )
     //     return;
     // }
 
-    // if (isPixelComputed())
-    //     return;
+    vec3 black = vec3(0.0);
+    vec3 white = vec3(1.0);
 
     ivec2 tile = ivec2(gl_GlobalInvocationID.xy);
 
     for (int i = 0; i < 4 * 4; i++)
     {
-        if (fillMask & (1 << i))
+        if ((fillMask & (1 << i)) > 0)
         {
-            pixel = tile * ivec2(4, 4) + ivec2(i % 4, i / 4);
+            ivec2 px = tile * ivec2(4, 4) + ivec2(i % 4, i / 4);
+            vec4 position_matid = texelFetch(g_position_matid, px, 0);
+            if (position_matid.w == 0.0) continue;
+
+            vec3 color;
+
+            if (shouldComputePixel(px))
+                color = computePixelColor(px, position_matid);
+            else
+                color = interpolatePixelColor(px);
+
+            // color = black;
+
+            imageStore(outputTexture, px, vec4(color, 1.0));
         }
     }
-
-    position_matid = texelFetch(g_position_matid, pixel, 0);
-        matid = position_matid.w;
-        if (matid == 0.0) return;
-
-    vec3 color;
-
-    color = computePixelColor();
-
-    imageStore(outputTexture, pixel, vec4(color, 1.0));
 }
 
 #endif
