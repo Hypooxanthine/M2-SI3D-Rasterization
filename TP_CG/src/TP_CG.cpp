@@ -73,7 +73,7 @@ public:
     
     int init( )
     {
-        m_objet= read_mesh("data/dragon.obj");
+        m_objet= read_mesh("data/robot.obj");
         
         Point min, max;
         m_objet.bounds(min, max);
@@ -101,6 +101,7 @@ public:
         albedoTexture.generateForColor(s_TexturesWidth, s_TexturesHeight, true);
         metallic_diffuse_shininessTexture.generateForColor(s_TexturesWidth, s_TexturesHeight, true);
         colorTexture.generateForColor(s_TexturesWidth, s_TexturesHeight, true);
+        debugTexture.generateForColor(s_TexturesWidth, s_TexturesHeight, true);
 
         // Initialisation du framebuffer de la fenêtre.
         // onScreen = true va faire que le framebuffer aura un renderID de 0.
@@ -121,6 +122,11 @@ public:
         intermediateFrameBuffer.generate();
         intermediateFrameBuffer.attachTexture(colorTexture, FrameBuffer::TextureAttachment::Color, 0);
         intermediateFrameBuffer.setupBindings();
+
+        // Initialisation du frambuffer pour la tecture debug (afficher l'interpolation)
+        debugFrameBuffer.generate();
+        debugFrameBuffer.attachTexture(debugTexture, FrameBuffer::TextureAttachment::Color, 0);
+        debugFrameBuffer.setupBindings();
 
         // Initialisation du shader storage buffer object pour les lumières
         lights.first = 2;
@@ -213,6 +219,25 @@ public:
             clear_key_state('t');
             m_UseInterpolation = !m_UseInterpolation;
         }
+
+        if (key_state('d'))
+        {
+            clear_key_state('d');
+            m_ShowDebug = !m_ShowDebug;
+        }
+
+        if (key_state('p'))
+        {
+            clear_key_state('p');
+            m_VarianceThreshold *= 1.1f;
+            std::cout << "Variance threshold: " << m_VarianceThreshold << std::endl;
+        }
+        if (key_state('m'))
+        {
+            clear_key_state('m');
+            m_VarianceThreshold /= 1.1f;
+            std::cout << "Variance threshold: " << m_VarianceThreshold << std::endl;
+        }
         
         // etape 2 : dessiner m_objet avec le shader program
         // configurer le pipeline 
@@ -243,6 +268,12 @@ public:
         m_objet.draw(m_GShader.getRenderId(), /* use position */ true, /* use texcoord */ false, /* use normal */ true, /* use color */ false, /* use material index*/ false);
 
         /* Deuxième passe : on envoie les textures au compute shader */
+        
+        // Simple clear de la texture debug
+        debugFrameBuffer.bind();
+        glViewport(0, 0, window_width(), window_height());
+        glClearColor(0.f, 0.f, 0.f, 1.f);
+        glClear(GL_COLOR_BUFFER_BIT);
 
         // D'abord, on nettoie le framebuffer intermédiaire
         intermediateFrameBuffer.bind();
@@ -305,6 +336,7 @@ public:
             m_SecondPassColorShader.setUniform("dB", dBortho);
             m_SecondPassColorShader.setUniform("dC", dCortho);
             m_SecondPassColorShader.setUniform("dD", dDortho);
+            m_SecondPassColorShader.setUniform("varianceThreshold", m_VarianceThreshold);
 
             m_SecondPassColorShader.dispatch(window_width() / 16, window_height() / 16, 1);
 
@@ -331,7 +363,10 @@ public:
 
         // On place la texture depuis le framebuffer intermédiaire
         // vers le framebuffer de la fenêtre (renderid = 0)
-        windowFrameBuffer.blitFrom(intermediateFrameBuffer, window_width(), window_height());
+        if (m_ShowDebug)
+            windowFrameBuffer.blitFrom(debugFrameBuffer, window_width(), window_height());
+        else
+            windowFrameBuffer.blitFrom(intermediateFrameBuffer, window_width(), window_height());
 
         // On utilise maintenant le framebuffer par défaut pour le swap buffers
         windowFrameBuffer.bind();
@@ -357,6 +392,7 @@ public:
 
         // Texture sur laquelle on va écrire les couleurs finales depuis le compute shader
         glBindImageTexture(0, colorTexture.getRenderId(), 0, GL_FALSE, 0, readwrite, GL_RGBA32F);
+        glBindImageTexture(1, debugTexture.getRenderId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
     }
 
 protected:
@@ -369,7 +405,8 @@ protected:
     Texture2D zbufferTexture;
     Texture2D position_matid_Texture, normalTexture, albedoTexture, metallic_diffuse_shininessTexture;
     Texture2D colorTexture; // Cette texture contiendra la couleur finale de la frame
-    FrameBuffer windowFrameBuffer, gFrameBuffer, intermediateFrameBuffer;
+    Texture2D debugTexture; // Pour voir quels pixels sont calculés et quels pixels sont interpolés
+    FrameBuffer windowFrameBuffer, gFrameBuffer, intermediateFrameBuffer, debugFrameBuffer;
     ShaderStorageBufferObject lightsSSBO;
 
     std::pair<unsigned int, std::array<PointLight, 2>> lights;
@@ -377,6 +414,9 @@ protected:
     std::array<int, 2> dAortho, dBortho, dCortho, dDortho, dAortho2, dBortho2, dCortho2, dDortho2;
 
     bool m_UseInterpolation = true;
+    bool m_ShowDebug = false;
+
+    float m_VarianceThreshold = 0.1f;
 
     static constexpr size_t s_TexturesWidth = 4096, s_TexturesHeight = 4096;
     static constexpr std::string_view s_GShaderPath = "TP_CG/shaders/gshader.glsl";

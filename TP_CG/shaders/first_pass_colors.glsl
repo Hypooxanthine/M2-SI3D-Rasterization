@@ -31,6 +31,7 @@ uniform int frameHeight;
 uniform vec3 cameraPos;
 
 layout(binding = 0, rgba32f) writeonly uniform image2D outputTexture;
+layout(binding = 1, rgba32f) writeonly uniform image2D debugTexture;
 
 vec3 computePixelColor(ivec2 pixel, vec4 position_matid)
 {
@@ -82,6 +83,7 @@ void main( )
     vec3 color = computePixelColor(px, position_matid);
 
     imageStore(outputTexture, px, vec4(color, 1.0));
+    imageStore(debugTexture, px, vec4(1, 0, 0, 1.0));
 }
 
 #endif

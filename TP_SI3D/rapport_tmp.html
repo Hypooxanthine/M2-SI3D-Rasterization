@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>rapport.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="rapport-du-projet-opengl">Rapport du projet OpenGL</h1>
+<h2 id="ressources">Ressources</h2>
+<p><a href="https://github.com/Hypooxanthine/M2-SI3D-Rasterization/tree/master/TP_SI3D">Sources du projet</a></p>
+<p><a href="https://github.com/Hypooxanthine/M2-SI3D-Rasterization/tree/master/src/MyThings">D'autres fichiers source que j'ai créés, communs à tous les projets SI3D / CG</a></p>
+<p>Pour compiler et lancer, depuis le répertoire racine de gkit :</p>
+<pre class="hljs"><code><div>premake4 gmake
+./run.sh
+</div></code></pre>
+<h2 id="screenshots">Screenshots</h2>
+<p><img src="file:///home/alexandre/code/M2-SI3D-Rasterization/TP_SI3D/screenshots/shadowmap_largescale.png" alt="Screenshot">
+<img src="file:///home/alexandre/code/M2-SI3D-Rasterization/TP_SI3D/screenshots/shadowmap_shortscale.png" alt="Screenshot"></p>
+<h2 id="abstraction">Abstraction</h2>
+<p>J'ai créé quelques classes pour me faciliter la tâche, qui servent à abstraire certains objets OpenGL en version &quot;POO&quot;. Je trouvais ça plus lisible et surtout je n'avais plus besoin de m'occuper de la libération des ressources (destructeurs des classes).
+Parmis les plus utiles dans ce TP :</p>
+<ul>
+<li><a href="https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/src/MyThings/Buffer.h">Buffers</a> (<a href="https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/src/MyThings/VertexBuffer.h">VBO</a>, <a href="https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/src/MyThings/IndexBuffer.h">EBO</a>)</li>
+<li><a href="https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/src/MyThings/VertexArray.h">Vertex arrays</a></li>
+<li><a href="https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/src/MyThings/MultiMesh.h">Multimesh</a> et son <a href="https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/src/MyThings/DrawIndirectBO.h">draw indirect buffer</a></li>
+<li><a href="https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/src/MyThings/FrameBuffer.h">Frame buffer</a></li>
+</ul>
+<p>La plupart des valeurs de l'application sont paramétrables, par exemple le nombre de chunks en X ou Y, la largeur d'un chunk (en blocs), la hauteur max du terrain (en blocs), tout ceci est dans le <a href="https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/TP_SI3D/include/Terrain.h">header du terrain</a>. La hauteur par défaut est calculée empiriquement selon les deux autres dimensions, mais on peut quand même la modifier.</p>
+<p>Le fichier <a href="https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/TP_SI3D/include/AppParameters.h">AppParameters.h</a> n'est pas vraiment fait pour être modifié au final, à part le define pour montrer ou non le nombre de chunks affichés en temps réel dans la console (cela n'innonde pas la console, une ligne s'affiche seulement quand le nombre de chunks affichés varie). On pourra éventuellement y modifier les chemins d'accès aux fichiers .obj des cubes, si besoin.</p>
+<h2 id="heighmap-vers-g%C3%A9om%C3%A9trie">Heighmap vers géométrie</h2>
+<h3 id="division-du-monde-en-chunks">Division du monde en chunks</h3>
+<p>Une classe <a href="https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/TP_SI3D/include/ChunkManager.h">ChunkManager</a> gère les chunks : c'est elle qui les contient, mais elle garde aussi une trace, pour chaque chunk, de l'id de sa première instance ainsi que le nombre total d'instances de tous les chunks réunis.</p>
+<h3 id="attribution-dune-position-et-dun-type-de-cube-pour-chaque-pixel">Attribution d'une position et d'un type de cube pour chaque pixel</h3>
+<p>C'est la classe <a href="https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/TP_SI3D/include/Chunk.h">chunk</a> qui va échantillonner la heightmap, uniquement dans son domaine propre (paramètres startX, startY, chunkWidth). Pour pouvoir correctement échantillonner, on donne aussi les paramètres totalX et totalY.
+Je stocke dans une map ayant pour clé l'indice des meshes, et pour valeur un vecteur de Transforms. C'est la hauteur qui déterminera le type de cube (mesh id) qui sera utilisé en ce point.</p>
+<h3 id="transfert-des-donn%C3%A9es-%C3%A0-la-carte-graphique">Transfert des données à la carte graphique</h3>
+<p>J'utilise un SSBO qui va stocker la concaténation des matrices de modèle des cubes, pour chaque chunk et chaque type de bloc.</p>
+<p>D'autre part, j'ai créé une classe MultiMesh qui se charge de la cohérence des données pour l'utilisation de glMultiDrawElementsIndirect. Dans cette classe, je vais avoir un buffer pour les vertice, un buffer pour les indices, et un buffer pour les commandes. Un vertex contient une position, une coordonnée de texture et une normale. Le multimesh permet d'ajouter séquentiellement plusieurs meshes aux deux premiers buffers, tout en conservant les tailles / les indices nécessaires dans les tableaux pour s'y retrouver avec les commandes. Un VAO est paramétré dans updateBuffers.</p>
+<p>Ensuite, on peut créer ou modifier des commandes. Pour créer une commande par exemple, il faut un indice de mesh, combien d'instances doivent être dessinées, et quel est son baseInstance. Ce dernier paramètre est crucial car c'est lui qui permettra de se repérer dans le SSBO, dans le <a href="https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/data/shaders/TP_SI3D/CubeShadowBuilder.glsl">vertex shader</a>.</p>
+<p>Dans mon implémentation, j'ai choisi l'approche de ne pas supprimer une commande, mais plutôt de la modifier en fixant à zéro son nombre d'instances. Visuellement ça ne change rien, et ça me permet de ne pas recréer potentiellement à chaque frame tout le command buffer et de le renvoyer à la carte graphique. J'ai supposé que cela prendrait moins de temps avec l'implémentation que j'ai choisie.</p>
+<h2 id="optimisation--frustum-culling">Optimisation : frustum culling</h2>
+<h3 id="d%C3%A9tails">Détails</h3>
+<p>Les algorithmes se trouvent dans <a href="https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/TP_SI3D/include/FrustumCulling.h">ce fichier</a>.</p>
+<p>Contrôles : la touche C permet d'activer ou de désactiver le frustum culling.</p>
+<h3 id="impl%C3%A9mentation">Implémentation</h3>
+<p>En terme de structures de données, c'est assez léger : juste un AABB contenant un first et un second. Chaque chunk peut retourner son propre englobant et c'est ce qui permettra de faire le frustum culling pour tous les chunks.</p>
+<p>Dans l'espace monde, on a un AABB et un frustum. On va extraire les 8 coins du frustum, et regarder si une des 6 faces du AABB peut entièrement séparer le AABB du frustum. Le test est rapide car on a simplement besoin de vérifier des inégalités sur chaque axe. Si une des faces du AABB peut entièrement séparer le AABB du frustum, alors on souhaitera ne pas afficher le chunk. Sinon, on passe en espace projectif :</p>
+<ul>
+<li>Le AABB devient le cube unitaire ([-1, 1]³)</li>
+<li>Le frustum de vue devient le aabb déformé par les matrices VP
+On se trouve dans la même situation : un AABB contre 8 sommets. Donc on refait exactement le même test. Si aucun plan n'est trouvé, alors on affichera le chunk. Sinon, on le cachera (càd: on fixera son nombre d'instances à zéro).</li>
+</ul>
+<h2 id="ombrage">Ombrage</h2>
+<h3 id="d%C3%A9tails">Détails</h3>
+<p>J'ai dû créer un shader pour la <a href="https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/data/shaders/TP_SI3D/CubeShadowBuilder.glsl">construction de la shadowmap</a>, et modifier le shader <a href="https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/data/shaders/TP_SI3D/Cube.glsl">affichant les cubes</a>.</p>
+<p>Contrôles : les touches A et E permettent de changer l'inclinaison de la lumière directionnelle.</p>
+<h3 id="impl%C3%A9mentation">Implémentation</h3>
+<p>J'ai créé et utilisé les classes <a href="https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/src/MyThings/FrameBuffer.h">FrameBuffer</a> et <a href="https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/src/MyThings/Texture2D.h">Texture2D</a>.</p>
+<p>Côté application, tout est dans <a href="https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/TP_SI3D/src/TP_SI3D.cpp">la classe principale</a>.</p>
+<p>Il faut d'abord définir le volume &quot;de vue&quot; de la lumière. Ma lumière est directionnelle, donc j'utilise une projection orthographique. Je prends les dimensions max du terrain pour largeur, hauteur et profondeur. De cette manière, puisque je veux faire simplement tourner la lumière directionnelle autour de la scène (selon l'axe X uniquement), toute la scène devrait plus ou moins pouvoir être ombragée si nécessaire (les bords du terrains ont une hauteur assez faible, donc cela convient).</p>
+<p>Pour la matrice de vue, elle change quand on appuie sur A ou E. C'est une rotation suivie d'une translation pour que le volume de lumière soit centré sur le terrain.</p>
+<p>Dans le pipeline, d'abord je dessine la scène avec un simple shader qui a pour seul objectif de stocker la profondeur dans le framebuffer. Ensuite, une deuxième passe sur le framebuffer par défaut va permettre d'attribuer leur vraie couleur aux pixels. Je passe la carte de profondeurs de la première passe au shader de la seconde passe pour vérifier si un fragment est à l'ombre ou non.</p>
+<p>C'est dans le <a href="https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/data/shaders/TP_SI3D/Cube.glsl">deuxième shader</a> que la couleur d'un fragment est déterminée. Si un fragment est exposé à la lumière, je fais un simple calcul de lumière diffuse où la couleur de base est tirée de la feuille de sprites. S'il est à l'ombre, je divise par 10 son intensité.</p>
+<p>Pour déterminer qu'un fragment est à l'ombre, je considère le fragment dans le repère projectif de la lumière. Je normalise les valeurs pour passer vers [0, 1]³, et les coordonnées xy du fragment dans cet espace sont les coordonnées de textures qui m'intéressent pour ce fragment. Mais comme le pixel de la shadowmap a été calculé pour un fragment différent (même si très proche dans l'espace), il y a beaucoup de bruit, que j'ai réglé par l'ajout d'un biais de 0.0025, trouvé empiriquement pour obtenir un résultat visuellement agréable sur cette scène.</p>
+
+</body>
+</html>

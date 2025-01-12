@@ -41,7 +41,10 @@ uniform ivec2 dB;
 uniform ivec2 dC;
 uniform ivec2 dD;
 
+uniform float varianceThreshold;
+
 layout(binding = 0, rgba32f) uniform image2D outputTexture;
+layout(binding = 1, rgba32f) writeonly uniform image2D debugTexture;
 
 vec3 computePixelColor(ivec2 pixel, vec4 position_matid)
 {
@@ -119,7 +122,7 @@ bool shouldComputePixel(ivec2 px)
     vec3 b = imageLoad(outputTexture, px + dB).xyz;
     vec3 c = imageLoad(outputTexture, px + dC).xyz;
     vec3 d = imageLoad(outputTexture, px + dD).xyz;
-    return variance(a, b, c, d) > 0.0001;
+    return variance(a, b, c, d) > varianceThreshold;
 }
 
 void main( )
@@ -146,10 +149,15 @@ void main( )
             vec3 color;
 
             if (shouldComputePixel(px))
+            {
                 color = computePixelColor(px, position_matid);
+                imageStore(debugTexture, px, vec4(1, 0, 0, 1.0));
+            }
             else
+            {
                 color = interpolatePixelColor(px);
-                // color = white;
+                imageStore(debugTexture, px, vec4(0.3, 0.2, 1, 1.0));
+            }
 
             // color = black;
             // color = computePixelColor(px, position_matid);
