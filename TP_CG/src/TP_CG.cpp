@@ -83,11 +83,13 @@ public:
         m_GShader.generate();
         m_FirstPassColorsShader.generate();
         m_SecondPassColorShader.generate();
+        m_FullColorsShader.generate();
 
         m_ShadersCompileOK = true;
         m_ShadersCompileOK = m_ShadersCompileOK && m_GShader.reload(s_GShaderPath);
         m_ShadersCompileOK = m_ShadersCompileOK && m_FirstPassColorsShader.reload(s_FirstPassColors);
         m_ShadersCompileOK = m_ShadersCompileOK && m_SecondPassColorShader.reload(s_SecondPassColors);
+        m_ShadersCompileOK = m_ShadersCompileOK && m_FullColorsShader.reload(s_FullColors);
 
         if (m_ShadersCompileOK)
             std::cout << "Shaders compiled successfully" << std::endl;
@@ -123,8 +125,8 @@ public:
         // Initialisation du shader storage buffer object pour les lumières
         lights.first = 2;
         lights.second = {
-            PointLight{{5, 5, 0}, {1, 1, 1}, 3.f, 100.f},
-            PointLight{{0, 5, 5}, {1, 1, 1}, 3.f, 100.f}
+            PointLight{{0, 5, 5}, {1, 1, 1}, 1.f, 100.f},
+            PointLight{{5, 5, 0}, {1, 1, 1}, 1.f, 100.f}
         };
         lightsSSBO.generate();
         lightsSSBO.setBindingPoint(0);
@@ -197,8 +199,19 @@ public:
                 std::cerr << "Couldn't reload " << s_SecondPassColors << "\n";
                 return 1;
             }
+            if (!m_FullColorsShader.reload(s_FullColors))
+            {
+                std::cerr << "Couldn't reload " << s_FullColors << "\n";
+                return 1;
+            }
 
             std::cout << "Shaders compiled successfully" << std::endl;
+        }
+
+        if (key_state('t'))
+        {
+            clear_key_state('t');
+            m_UseInterpolation = !m_UseInterpolation;
         }
         
         // etape 2 : dessiner m_objet avec le shader program
@@ -237,63 +250,82 @@ public:
         glClearColor(0.2f, 0.2f, 0.2f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        /* Calculer un pixel sur 16 */
+        if (m_UseInterpolation)
+        {
 
-        // On utilise le premier compute shader pour calculer un pixel sur 16
-        m_FirstPassColorsShader.bind();
+            /* Calculer un pixel sur 16 */
 
-        // On envoie les données du gbuffer (entre autres) au compute shader
-        setComputeShaderData(m_FirstPassColorsShader, GL_READ_ONLY);
+            // On utilise le premier compute shader pour calculer un pixel sur 16
+            m_FirstPassColorsShader.bind();
 
-        m_FirstPassColorsShader.dispatch(window_width() / 5, window_height() / 5, 1);
+            // On envoie les données du gbuffer (entre autres) au compute shader
+            setComputeShaderData(m_FirstPassColorsShader, GL_WRITE_ONLY);
 
-        // On attend que le compute shader ait fini
-        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+            m_FirstPassColorsShader.dispatch(window_width() / 16, window_height() / 16, 1);
 
-        /* Calculer ou interpoler les autres pixels */
+            // On attend que le compute shader ait fini
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-        // On utilise le second compute shader
-        m_SecondPassColorShader.bind();
+            /* Calculer ou interpoler les autres pixels */
 
-        // On envoie les données du gbuffer (entre autres) au compute shader
-        // En read/write ici car on a besoin de récupérer les valeurs des pixels
-        // déjà calculés, pour les interpoler justement
-        setComputeShaderData(m_SecondPassColorShader, GL_READ_WRITE);
+            // On utilise le second compute shader
+            m_SecondPassColorShader.bind();
 
-        m_SecondPassColorShader.setUniform("fillMask", 0b0000010000000000);
-        m_SecondPassColorShader.setUniform("dA", dAdiag2);
-        m_SecondPassColorShader.setUniform("dB", dBdiag2);
-        m_SecondPassColorShader.setUniform("dC", dCdiag2);
-        m_SecondPassColorShader.setUniform("dD", dDdiag2);
+            // On envoie les données du gbuffer (entre autres) au compute shader
+            // En read/write ici car on a besoin de récupérer les valeurs des pixels
+            // déjà calculés, pour les interpoler justement
+            setComputeShaderData(m_SecondPassColorShader, GL_READ_WRITE);
+            
+            m_SecondPassColorShader.setUniform("fillMask", 0b0000010000000000);
+            m_SecondPassColorShader.setUniform("dA", dAdiag2);
+            m_SecondPassColorShader.setUniform("dB", dBdiag2);
+            m_SecondPassColorShader.setUniform("dC", dCdiag2);
+            m_SecondPassColorShader.setUniform("dD", dDdiag2);
 
-        m_SecondPassColorShader.dispatch(window_width() / 5, window_height() / 5, 1);
+            m_SecondPassColorShader.dispatch(window_width() / 16, window_height() / 16, 1);
 
-        m_SecondPassColorShader.setUniform("fillMask", 0b0000000100000100);
-        m_SecondPassColorShader.setUniform("dA", dAortho2);
-        m_SecondPassColorShader.setUniform("dB", dBortho2);
-        m_SecondPassColorShader.setUniform("dC", dCortho2);
-        m_SecondPassColorShader.setUniform("dD", dDortho2);
+            m_SecondPassColorShader.setUniform("fillMask", 0b0000000100000100);
+            m_SecondPassColorShader.setUniform("dA", dAortho2);
+            m_SecondPassColorShader.setUniform("dB", dBortho2);
+            m_SecondPassColorShader.setUniform("dC", dCortho2);
+            m_SecondPassColorShader.setUniform("dD", dDortho2);
 
-        m_SecondPassColorShader.dispatch(window_width() / 5, window_height() / 5, 1);
+            m_SecondPassColorShader.dispatch(window_width() / 16, window_height() / 16, 1);
 
-        m_SecondPassColorShader.setUniform("fillMask", 0b1010000010100000);
-        m_SecondPassColorShader.setUniform("dA", dAdiag);
-        m_SecondPassColorShader.setUniform("dB", dBdiag);
-        m_SecondPassColorShader.setUniform("dC", dCdiag);
-        m_SecondPassColorShader.setUniform("dD", dDdiag);
+            m_SecondPassColorShader.setUniform("fillMask", 0b1010000010100000);
+            m_SecondPassColorShader.setUniform("dA", dAdiag);
+            m_SecondPassColorShader.setUniform("dB", dBdiag);
+            m_SecondPassColorShader.setUniform("dC", dCdiag);
+            m_SecondPassColorShader.setUniform("dD", dDdiag);
 
-        m_SecondPassColorShader.dispatch(window_width() / 5, window_height() / 5, 1);
+            m_SecondPassColorShader.dispatch(window_width() / 16, window_height() / 16, 1);
 
-        m_SecondPassColorShader.setUniform("fillMask", 0b0101101001011010);
-        m_SecondPassColorShader.setUniform("dA", dAortho);
-        m_SecondPassColorShader.setUniform("dB", dBortho);
-        m_SecondPassColorShader.setUniform("dC", dCortho);
-        m_SecondPassColorShader.setUniform("dD", dDortho);
+            m_SecondPassColorShader.setUniform("fillMask", 0b0101101001011010);
+            m_SecondPassColorShader.setUniform("dA", dAortho);
+            m_SecondPassColorShader.setUniform("dB", dBortho);
+            m_SecondPassColorShader.setUniform("dC", dCortho);
+            m_SecondPassColorShader.setUniform("dD", dDortho);
 
-        m_SecondPassColorShader.dispatch(window_width() / 5, window_height() / 5, 1);
+            m_SecondPassColorShader.dispatch(window_width() / 16, window_height() / 16, 1);
 
-        // On attend que le compute shader ait fini
-        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+            // On attend que le compute shader ait fini
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        }
+        else
+        {
+
+            /* Calculer tous les pixels */
+
+            m_FullColorsShader.bind();
+
+            // On envoie les données du gbuffer (entre autres) au compute shader
+            setComputeShaderData(m_FullColorsShader, GL_WRITE_ONLY);
+
+            m_FullColorsShader.dispatch(window_width() / 16, window_height() / 16, 1);
+
+            // On attend que le compute shader ait fini
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        }
 
         /* Récupérer la texture calculée par les compute shaders pour l'afficher */
 
@@ -331,7 +363,7 @@ protected:
     Mesh m_objet;
     Orbiter m_camera;
     Shader m_GShader;
-    ComputeShader m_FirstPassColorsShader, m_SecondPassColorShader;
+    ComputeShader m_FirstPassColorsShader, m_SecondPassColorShader, m_FullColorsShader;
     bool m_ShadersCompileOK = true;
 
     Texture2D zbufferTexture;
@@ -344,10 +376,13 @@ protected:
     std::array<int, 2> dAdiag, dBdiag, dCdiag, dDdiag, dAdiag2, dBdiag2, dCdiag2, dDdiag2;
     std::array<int, 2> dAortho, dBortho, dCortho, dDortho, dAortho2, dBortho2, dCortho2, dDortho2;
 
+    bool m_UseInterpolation = true;
+
     static constexpr size_t s_TexturesWidth = 4096, s_TexturesHeight = 4096;
     static constexpr std::string_view s_GShaderPath = "TP_CG/shaders/gshader.glsl";
     static constexpr std::string_view s_FirstPassColors = "TP_CG/shaders/first_pass_colors.glsl";
     static constexpr std::string_view s_SecondPassColors = "TP_CG/shaders/second_pass_colors.glsl";
+    static constexpr std::string_view s_FullColors = "TP_CG/shaders/full_colors.glsl";
 };
 
 
