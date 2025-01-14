@@ -307,7 +307,7 @@ public:
             // déjà calculés, pour les interpoler justement
             setComputeShaderData(m_SecondPassColorShader, GL_READ_WRITE);
             
-            m_SecondPassColorShader.setUniform("fillMask", 0b0000010000000000);
+            m_SecondPassColorShader.setUniform("fillMask", 0b0000'0100'0000'0000);
             m_SecondPassColorShader.setUniform("dA", dAdiag2);
             m_SecondPassColorShader.setUniform("dB", dBdiag2);
             m_SecondPassColorShader.setUniform("dC", dCdiag2);
@@ -315,7 +315,7 @@ public:
 
             m_SecondPassColorShader.dispatch(window_width() / 16, window_height() / 16, 1);
 
-            m_SecondPassColorShader.setUniform("fillMask", 0b0000000100000100);
+            m_SecondPassColorShader.setUniform("fillMask", 0b0000'0001'0000'0100);
             m_SecondPassColorShader.setUniform("dA", dAortho2);
             m_SecondPassColorShader.setUniform("dB", dBortho2);
             m_SecondPassColorShader.setUniform("dC", dCortho2);
@@ -323,7 +323,7 @@ public:
 
             m_SecondPassColorShader.dispatch(window_width() / 16, window_height() / 16, 1);
 
-            m_SecondPassColorShader.setUniform("fillMask", 0b1010000010100000);
+            m_SecondPassColorShader.setUniform("fillMask", 0b1010'0000'1010'0000);
             m_SecondPassColorShader.setUniform("dA", dAdiag);
             m_SecondPassColorShader.setUniform("dB", dBdiag);
             m_SecondPassColorShader.setUniform("dC", dCdiag);
@@ -331,7 +331,7 @@ public:
 
             m_SecondPassColorShader.dispatch(window_width() / 16, window_height() / 16, 1);
 
-            m_SecondPassColorShader.setUniform("fillMask", 0b0101101001011010);
+            m_SecondPassColorShader.setUniform("fillMask", 0b0101'1010'0101'1010);
             m_SecondPassColorShader.setUniform("dA", dAortho);
             m_SecondPassColorShader.setUniform("dB", dBortho);
             m_SecondPassColorShader.setUniform("dC", dCortho);
@@ -341,7 +341,7 @@ public:
             m_SecondPassColorShader.dispatch(window_width() / 16, window_height() / 16, 1);
 
             // On attend que le compute shader ait fini
-            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+            // glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
         }
         else
         {

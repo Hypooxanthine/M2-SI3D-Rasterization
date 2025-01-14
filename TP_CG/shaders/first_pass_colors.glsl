@@ -70,7 +70,14 @@ vec3 computePixelColor(ivec2 pixel, vec4 position_matid)
         color += ((1.0 - metallic) * diffuseColor + specularColor);
     }
 
-    return color;
+    vec3 toto = vec3(1.0, 1.0, 1.0);
+
+    // for (int i = 0; i < 100000; ++i)
+    // {
+    //     toto = sqrt(toto);
+    // }
+
+    return max(vec3(0., 0., 0.), color * toto / toto);
 }
 
 void main( )

@@ -83,7 +83,14 @@ vec3 computePixelColor(ivec2 pixel, vec4 position_matid)
         color += ((1.0 - metallic) * diffuseColor + specularColor);
     }
 
-    return color;
+    vec3 toto = vec3(1.0, 1.0, 1.0);
+
+    // for (int i = 0; i < 100000; ++i)
+    // {
+    //     toto = sqrt(toto);
+    // }
+
+    return max(vec3(0., 0., 0.), color * toto / toto);
 }
 
 vec3 interpolatePixelColor(ivec2 pixel)
@@ -98,14 +105,13 @@ vec3 interpolatePixelColor(ivec2 pixel)
 
 float gray(vec3 color)
 {
-    return 0.21 * color.r + 0.71 * color.g + 0.08 * color.b;
+    return dot(color, vec3(0.299, 0.587, 0.114));
 }
 
 float variance(vec3 a, vec3 b, vec3 c, vec3 d)
 {
-    vec3 s = (a + b + c + d) / 4.0;
-    vec3 ss = (a * a + b * b + c * c + d * d) / 4.0;
-    return abs(gray(ss - s * s));
+    float mean = (gray(a) + gray(b) + gray(c) + gray(d)) / 4.0;
+    return (pow(gray(a) - mean, 2) + pow(gray(b) - mean, 2) + pow(gray(c) - mean, 2) + pow(gray(d) - mean, 2)) / 4.0;
 }
 
 bool shouldComputePixel(ivec2 px)
@@ -113,16 +119,21 @@ bool shouldComputePixel(ivec2 px)
     // return true;
     // return false;
     
-    if (texelFetch(g_position_matid, px + dA, 0).w == 0.0) return true;
-    if (texelFetch(g_position_matid, px + dB, 0).w == 0.0) return true;
-    if (texelFetch(g_position_matid, px + dC, 0).w == 0.0) return true;
-    if (texelFetch(g_position_matid, px + dD, 0).w == 0.0) return true;
+    // Je pensais que ces lignes étaient importantes au cas où un voisin n'aurait pas de couleur
+    // mais finalement, les enlever semble ne rien changer du tout au résultat final
+    // et donc ça va plus vite
+    // if (texelFetch(g_position_matid, px + dA, 0).w == 0.0) return true;
+    // if (texelFetch(g_position_matid, px + dB, 0).w == 0.0) return true;
+    // if (texelFetch(g_position_matid, px + dC, 0).w == 0.0) return true;
+    // if (texelFetch(g_position_matid, px + dD, 0).w == 0.0) return true;
 
     vec3 a = imageLoad(outputTexture, px + dA).xyz;
     vec3 b = imageLoad(outputTexture, px + dB).xyz;
     vec3 c = imageLoad(outputTexture, px + dC).xyz;
     vec3 d = imageLoad(outputTexture, px + dD).xyz;
-    return variance(a, b, c, d) > varianceThreshold;
+
+    float v = variance(a, b, c, d);
+    return v > varianceThreshold;
 }
 
 void main( )
