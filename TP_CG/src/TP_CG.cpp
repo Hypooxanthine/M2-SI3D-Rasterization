@@ -292,7 +292,7 @@ public:
             // On envoie les données du gbuffer (entre autres) au compute shader
             setComputeShaderData(m_FirstPassColorsShader, GL_WRITE_ONLY);
 
-            m_FirstPassColorsShader.dispatch(window_width() / 16, window_height() / 16, 1);
+            m_FirstPassColorsShader.dispatch(window_width() / 4 / 8, window_height() / 4 / 8, 1);
 
             // On attend que le compute shader ait fini
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -313,7 +313,7 @@ public:
             m_SecondPassColorShader.setUniform("dC", dCdiag2);
             m_SecondPassColorShader.setUniform("dD", dDdiag2);
 
-            m_SecondPassColorShader.dispatch(window_width() / 16, window_height() / 16, 1);
+            m_SecondPassColorShader.dispatch(window_width() / 4 / 8, window_height() / 4 / 8, 1);
 
             m_SecondPassColorShader.setUniform("fillMask", 0b0000'0001'0000'0100);
             m_SecondPassColorShader.setUniform("dA", dAortho2);
@@ -321,7 +321,7 @@ public:
             m_SecondPassColorShader.setUniform("dC", dCortho2);
             m_SecondPassColorShader.setUniform("dD", dDortho2);
 
-            m_SecondPassColorShader.dispatch(window_width() / 16, window_height() / 16, 1);
+            m_SecondPassColorShader.dispatch(window_width() / 4 / 8, window_height() / 4 / 8, 1);
 
             m_SecondPassColorShader.setUniform("fillMask", 0b1010'0000'1010'0000);
             m_SecondPassColorShader.setUniform("dA", dAdiag);
@@ -329,7 +329,7 @@ public:
             m_SecondPassColorShader.setUniform("dC", dCdiag);
             m_SecondPassColorShader.setUniform("dD", dDdiag);
 
-            m_SecondPassColorShader.dispatch(window_width() / 16, window_height() / 16, 1);
+            m_SecondPassColorShader.dispatch(window_width() / 4 / 8, window_height() / 4 / 8, 1);
 
             m_SecondPassColorShader.setUniform("fillMask", 0b0101'1010'0101'1010);
             m_SecondPassColorShader.setUniform("dA", dAortho);
@@ -338,7 +338,7 @@ public:
             m_SecondPassColorShader.setUniform("dD", dDortho);
             m_SecondPassColorShader.setUniform("varianceThreshold", m_VarianceThreshold);
 
-            m_SecondPassColorShader.dispatch(window_width() / 16, window_height() / 16, 1);
+            m_SecondPassColorShader.dispatch(window_width() / 4 / 8, window_height() / 4 / 8, 1);
 
             // On attend que le compute shader ait fini
             // glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -353,7 +353,7 @@ public:
             // On envoie les données du gbuffer (entre autres) au compute shader
             setComputeShaderData(m_FullColorsShader, GL_WRITE_ONLY);
 
-            m_FullColorsShader.dispatch(window_width() / 16, window_height() / 16, 1);
+            m_FullColorsShader.dispatch(window_width() / 8, window_height() / 8, 1);
 
             // On attend que le compute shader ait fini
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
