@@ -20,9 +20,9 @@ premake4 gmake
 
 ## Abstraction
 
-Comme pour mon projet de OpenGL (dans le même dépôt Git), j'ai utilisé certaines de mes classes d'abstraction, notamment pour les [compute shaders](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/src/MyThings/ComputeShader.h) et les [frame buffers](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/src/MyThings/FrameBuffer.h). Le code spécifique au compute shader n'est pas extrêmement utile au final, le plus utile était pour ce qui touche aux uniforms et aux texture uniforms (hérité de la classe [Shader](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/src/MyThings/Shader.h)).
+Comme pour mon projet de OpenGL (dans le même dépôt Git), j'ai utilisé certaines de mes classes d'abstraction, notamment pour les [compute shaders](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/src/MyThings/ComputeShader.h) et les [frame buffers](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/src/MyThings/FrameBuffer.h). Le code spécifique au compute shader n'est pas extrêmement utile au final, le plus utile était pour ce qui touche aux uniforms et aux texture uniforms ( hérité de la classe [Shader](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/src/MyThings/Shader.h)).
 
-## Construction du GBuffer
+## Construction du GBuffer
 
 ### Rappel du cours
 
@@ -49,7 +49,7 @@ Le fragment shader va remplir le GBuffer. Pour ce qui est des valeurs du modèle
 
 Pour le "remplissage" du GBuffer, il s'agit de la partie la plus difficile de l'étape. Ici, dans le fragment shader, on utilise de multiples sorties, correspondant aux valeurs du GBuffer. Mais ces sorties doivent êtres paramétrées.
 
-### Côté application
+### Côté application
 
 Pour paramétrer les multiples sorties du fragment shader, j'ai dû créer un frame buffer "gFrameBuffer" auquel j'ajoute des GL_COLOR_ATTACHMENTi où i va de 0 à 3. Chaque valeur du GBuffer fait l'objet d'une texture, sauf pour la position et le matid que j'ai mutualisés en une texture 4 canaux. Finalement, chacune de ces textures correspond à la sortie i dans le fragment shader.
 
@@ -65,4 +65,4 @@ On a un rendu comme avec la pipeline standard, sans artefact. Cependant, les cal
 
 ### Abstraction
 
-Maintenant qu'on a notre GBuffer, on pet
+Maintenant qu'on a notre GBuffer, on peut 
