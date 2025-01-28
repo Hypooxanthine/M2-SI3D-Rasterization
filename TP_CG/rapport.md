@@ -65,4 +65,26 @@ On a un rendu comme avec la pipeline standard, sans artefact. Cependant, les cal
 
 ### Abstraction
 
-Maintenant qu'on a notre GBuffer, on peut 
+Maintenant, on peut travailler sur l'interpolation des couleurs.
+
+La première passe calcule 1 pixel sur 4 dans les deux dimensions (donc 1 pixel sur 16), et a son propre compute shader.
+
+La seconde passe est subdivisée en 4 sous-passes et a son propre unique compute shader également.
+
+![screenshot](screenshots/schema_interpolation.png)
+
+Ce schéma montre la seconde passe. Au début, on a déjà 1 pixel sur 16 dont on connait la couleur.
+
+Ensuite, pour chaque pixel, on définit des parents, et on calcule la variance (dans mon TP, elle se base sur la couleur). Si la variance dépasse un certain seuil, on recalcule le pixel. Sinon, on interpole la couleur des parents.
+
+Les cases noires correspondent à un pixel dont on connait la couleur. Les cases entourées correspondent à un pixel dont on cherche la couleur (soit par interpolation, soit par le calcul). On observe que peu importe la sous-passe, un pixel dont on cherche la couleur a 4 parents. On observe également que dans une même sous-passe, si on a plusieurs pixels dont on cherche la couleur, les parents de ces pixels ont des positions relatives identiques pour tous les pixels entourés (= dont on cherche la couleur).
+
+On peut donc utiliser des variables pour toutes ces valeurs. On aura donc 4 variables vec2 qui donneront, pour chaque pixel dont on veut attribuer la couleur, la position relative des parents.
+
+Il faut également une variable contenant l'information des pixels dont on cherche la couleur. Pour cela, on observe dans le schéma que les pixels dont on cherche la couleur sont tous contenus dans la sous-grille 4x4 en haut à gauche de la grille 5x5 (pointillés sur les schémas montrant la grille 4x4 à chaque sous-passe). On a donc 16 pixels possibles, et on passera sur chacun d'entre eux sauf celui en haut à gauche (couleur déjà calculée en première passe). J'ai donc choisi d'utiliser de coder l'information sur 2 octets, où chaque bit correspond à 1 si le pixel correspondant doit se faire attribuer une couleur, et à 0 sinon.
+
+### Côté application
+
+Avant la boucle de rendu, j'écris les valeurs des 4 vecteurs pour les 4 sous-passes (16 vecteurs au total). Je génère également deux frame buffers : un intermédiaire, qui va juste être un lien vers la texture en cours d'écriture par les compute shaders, et un pour le debug, qui permet l'affichage des pixels rouges/bleus pour les pixels calculés/interpolés. Le frame buffer intermédiaire servira à la fin à faire un glBlitFrameBuffers sur le frame buffer par défaut (0).
+
+Pour le rendu, puisque je voulais pouvoir activer le mode interpolation ou non, j'ai une branche qui va utiliser un shader qui calcule tous les pixels comme d'habitude. 
