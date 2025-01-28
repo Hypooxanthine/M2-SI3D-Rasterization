@@ -9,6 +9,7 @@ obj/
 *.png
 !TP_SI3D/screenshots/**
 !TP2_SI3D/screenshots/**
+!TP_CG/screenshots/**
 data/dragon.obj
 data/rungholt/**
 data/sponza/**
