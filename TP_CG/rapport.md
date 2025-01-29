@@ -124,7 +124,7 @@ Une fonction donne la variance en fonction de la couleur des voisins (à noter: 
   <img
   src="screenshots/robot_interp_debug_0.1.png"
   alt="Screenshot.">
-  <figcaption>Seuil de variance de 0.1</figcaption>
+  <figcaption>Seuil de variance de 0.1 (bleu = interpolation, rouge = calcul)</figcaption>
 </figure>
 
 <figure>
@@ -138,7 +138,7 @@ Une fonction donne la variance en fonction de la couleur des voisins (à noter: 
   <img
   src="screenshots/robot_interp_debug_0.01.png"
   alt="Screenshot.">
-  <figcaption>Seuil de variance de 0.01</figcaption>
+  <figcaption>Seuil de variance de 0.01 (bleu = interpolation, rouge = calcul)</figcaption>
 </figure>
 
 <figure>
@@ -152,5 +152,5 @@ Une fonction donne la variance en fonction de la couleur des voisins (à noter: 
   <img
   src="screenshots/robot_interp_debug_0.001.png"
   alt="Screenshot.">
-  <figcaption>Seuil de variance de 0.001</figcaption>
+  <figcaption>Seuil de variance de 0.001 (bleu = interpolation, rouge = calcul)</figcaption>
 </figure>
