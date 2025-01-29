@@ -87,4 +87,70 @@ Il faut également une variable contenant l'information des pixels dont on cherc
 
 Avant la boucle de rendu, j'écris les valeurs des 4 vecteurs pour les 4 sous-passes (16 vecteurs au total). Je génère également deux frame buffers : un intermédiaire, qui va juste être un lien vers la texture en cours d'écriture par les compute shaders, et un pour le debug, qui permet l'affichage des pixels rouges/bleus pour les pixels calculés/interpolés. Le frame buffer intermédiaire servira à la fin à faire un glBlitFrameBuffers sur le frame buffer par défaut (0).
 
-Pour le rendu, puisque je voulais pouvoir activer le mode interpolation ou non, j'ai une branche qui va utiliser un shader qui calcule tous les pixels comme d'habitude. 
+Pour le rendu, puisque je voulais pouvoir activer le mode interpolation ou non, j'ai une branche qui va utiliser [un shader](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/TP_CG/shaders/full_colors.glsl) qui calcule tous les pixels comme d'habitude.
+
+Concernant le mode interpolation, il y a un premier dispatch pour la première passe, puis 4 dispatches pour la seconde passe. On peut voir les tableaux de bits passés en uniform. A noter que j'ai inversé les bits entre le schéma et le fichier c++, car je passe un nombre sur 4 octets alors que je n'ai besoin que de 2 octets, et donc je ne voulais pas un padding de 16 bits à gauche, il était donc plus simple d'inverser les bits.
+
+### Côté carte graphique
+
+#### Première passe
+
+[Ce shader](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/TP_CG/shaders/first_pass_colors.glsl) est utilisé.
+
+La taille des groupes est 8x8x1. Ainsi, pour le dispatch, je divise les dimensions de la fenêtre d'abord par 8, puis par 4 : je veux traiter 1 pixel sur 4 dans les deux dimensions.
+
+Le shader va ensuite calculer directement le pixel en haut à gauche de chaque tuile 4x4. Je ne commente pas la fonction de shading car ce n'est pas l'objet du TP. Cette fonction sera retrouvée à l'identique dans le shader suivant.
+
+#### Seconde passe
+
+[Ce shader](https://github.com/Hypooxanthine/M2-SI3D-Rasterization/blob/master/TP_CG/shaders/second_pass_colors.glsl) est utilisé.
+
+On retrouve les uniforms déjà abordés, notamment les 4 vec2, le tableau de bits (fillMask), et le seuil de variance.
+
+Le nombre de groups et de threads sera le même qu'en première passe. On va donc considérer dans le shader, encore une fois, une des tuiles 4x4 formant l'image. Puis on va boucler de 0 à 15 (pixels de la tuile), et faire une vérification sur le tableau de bits : si on a un 1 au bit correspondant, on interpole/calcule, sinon, on ne fait rien.
+
+Une fonction donne la variance en fonction de la couleur des voisins (à noter: un "voisin" est un des 4 pixels positionné comme le pixel courant + un des 4 vecteurs évoqués avant). On aurait aussi pu utiliser d'autres valeurs en concomitance, comme la position, la profondeur par exemple. Lorsque la variance est faible (inférieure au seuil), on va simplement interpoler la couleur des 4 voisins, ce qui est assez rapide. Dans le cas contraire, on va recalculer la couleur, de la même manière que dans la première passe.
+
+### Résultats
+
+<figure>
+  <img
+  src="screenshots/robot_interp_0.1.png"
+  alt="Screenshot.">
+  <figcaption>Seuil de variance de 0.1</figcaption>
+</figure>
+
+<figure>
+  <img
+  src="screenshots/robot_interp_debug_0.1.png"
+  alt="Screenshot.">
+  <figcaption>Seuil de variance de 0.1</figcaption>
+</figure>
+
+<figure>
+  <img
+  src="screenshots/robot_interp_0.01.png"
+  alt="Screenshot.">
+  <figcaption>Seuil de variance de 0.01</figcaption>
+</figure>
+
+<figure>
+  <img
+  src="screenshots/robot_interp_debug_0.01.png"
+  alt="Screenshot.">
+  <figcaption>Seuil de variance de 0.01</figcaption>
+</figure>
+
+<figure>
+  <img
+  src="screenshots/robot_interp_0.001.png"
+  alt="Screenshot.">
+  <figcaption>Seuil de variance de 0.001</figcaption>
+</figure>
+
+<figure>
+  <img
+  src="screenshots/robot_interp_debug_0.001.png"
+  alt="Screenshot.">
+  <figcaption>Seuil de variance de 0.001</figcaption>
+</figure>
