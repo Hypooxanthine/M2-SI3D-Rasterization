@@ -154,3 +154,11 @@ Une fonction donne la variance en fonction de la couleur des voisins (à noter: 
   alt="Screenshot.">
   <figcaption>Seuil de variance de 0.001 (bleu = interpolation, rouge = calcul)</figcaption>
 </figure>
+
+### Conclusion sur l'interpolation
+
+Au niveau des performances, même en ajoutant du "faux travail" dans la fonction de calcul d'un pixel, je n'ai pas trouvé d'exemple où le rendu interpolé donne de meilleures performances que le rendu où on calcule tous les pixels.
+
+Je pense qu'il aurait fallu apporter de la cohérence dans l'exécution des compute shaders, notamment dans la boucle for sur le masque de bits, et sur la condition où l'on décide d'interpoler / de calculer le pixel.
+
+Au niveau de la qualité visuelle des résultats, sur l'exemple de ce robot, il semble qu'une valeur de seuil de variance de 10⁻³ à 10⁻⁴ donne de bons résultats, avec peu de pixels calculés.
